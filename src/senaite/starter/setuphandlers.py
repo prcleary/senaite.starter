@@ -25,6 +25,7 @@ def install(context):
 
     # Run Installers
     setup_behaviors(portal)
+    extend_analysisrequest_schema(portal)
 
     logger.info("Install handler [DONE]")
 
@@ -57,6 +58,32 @@ def setup_behaviors(portal):
             logger.info("New behaviors: {}".format(fti.behaviors))
         else:
             logger.info("No new behaviors to add for {}".format(portal_type))
+
+
+def extend_analysisrequest_schema(portal):
+    """Add CNIC field to AnalysisRequest schema
+    """
+    logger.info("*** Extending AnalysisRequest Schema ***")
+    try:
+        from bika.lims.content.analysisrequest import schema as ar_schema
+        from senaite.starter.content.analysisrequest import get_cnic_field
+        
+        # Check if CNIC field already exists
+        if 'cnic' in ar_schema:
+            logger.info("CNIC field already exists in AnalysisRequest schema")
+            return
+        
+        # Add CNIC field to the schema
+        cnic_field = get_cnic_field()
+        ar_schema.addField(cnic_field)
+        
+        logger.info("Successfully added CNIC field to AnalysisRequest schema")
+        
+    except Exception as e:
+        logger.error("Error extending AnalysisRequest schema: {}".format(str(e)))
+        import traceback
+        logger.error(traceback.format_exc())
+
 
 
 

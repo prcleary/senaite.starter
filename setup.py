@@ -39,7 +39,6 @@ setup(
     zip_safe=False,
     install_requires=[
         "senaite.lims",
-        "archetypes.schemaextender",
         "setuptools",
     ],
     extras_require={
