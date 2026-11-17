@@ -6,6 +6,7 @@
     i18n_domain="senaite.starter">
 
   <include package="plone.behavior" file="meta.zcml"/>
+  <include package="archetypes.schemaextender" file="meta.zcml"/>
 
   <!-- Patient CNIC Field Behavior -->
   <plone:behavior
@@ -13,6 +14,13 @@
       provides=".patient.ICNICField"
       title="CNIC Field"
       description="Add CNIC field to Patient"
+      />
+
+  <!-- AnalysisRequest CNIC Field Extender (AT) -->
+  <adapter
+      for="bika.lims.interfaces.IAnalysisRequest"
+      provides="archetypes.schemaextender.interfaces.ISchemaModifier"
+      factory=".analysisrequest.AnalysisRequestCNICExtender"
       />
 
   <!-- Sample Type Schema Extender (DX) -->
