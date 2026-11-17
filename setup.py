@@ -39,7 +39,6 @@ setup(
     zip_safe=False,
     install_requires=[
         "senaite.lims",
-        "plone.schemaextender",
         "setuptools",
     ],
     extras_require={

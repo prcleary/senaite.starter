@@ -6,6 +6,9 @@ from senaite.starter import logger
 
 
 BEHAVIORS = [
+    ("Patient", [
+        "senaite.starter.content.patient.ICNICField",
+    ]),
     ("SampleType", [
         "senaite.starter.content.sampletype.ISampleTypeSchemaExtender",
     ]),

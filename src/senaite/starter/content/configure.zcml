@@ -5,13 +5,13 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="senaite.starter">
 
-  <include package="plone.schemaextender" file="meta.zcml"/>
+  <include package="plone.behavior" file="meta.zcml"/>
 
-  <!-- Patient Schema Extender (DX) -->
-  <adapter
-      for="senaite.patient.interfaces.IPatient"
-      provides="plone.schemaextender.interfaces.ISchemaModifier"
-      factory=".patient.PatientSchemaExtender"
+  <!-- Patient CNIC Field Behavior -->
+  <plone:behavior
+      provides=".patient.ICNICField"
+      title="CNIC Field"
+      description="Add CNIC field to Patient"
       />
 
   <!-- Sample Type Schema Extender (DX) -->
