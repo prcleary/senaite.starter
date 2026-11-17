@@ -7,6 +7,16 @@
 
   <include package="plone.behavior" file="meta.zcml"/>
 
+  <!-- Patient Schema Extender (DX) -->
+  <plone:behavior
+      for="senaite.patient.interfaces.IPatient"
+      name="patient-cnic-extender"
+      title="Custom Patient Fields"
+      description="Add custom fields to the Patient Schema"
+      provides=".patient.IPatientSchemaExtender"
+      factory=".patient.PatientSchemaExtender"
+      />
+
   <!-- Sample Type Schema Extender (DX) -->
   <plone:behavior
       for="senaite.core.interfaces.ISampleType"
