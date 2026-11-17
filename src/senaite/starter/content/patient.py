@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Patient CNIC field extension
-Field is added directly to Patient schema in setuphandler
+Patient CNIC field stored as object attribute
 """
 
 from plone.autoform import directives
 from plone.autoform.interfaces import IFormFieldProvider
+from plone.dexterity.interfaces import IDexterityContent
 from plone.supermodel import model
-from zope.interface import provider
+from zope.interface import provider, implementer
 from zope import schema
 
 from senaite.starter import messageFactory as _
@@ -15,11 +15,7 @@ from senaite.starter import messageFactory as _
 
 @provider(IFormFieldProvider)
 class ICNICField(model.Schema):
-    """Add CNIC field to Patient
-    
-    Note: This interface is defined here for reference but is NOT used.
-    The CNIC field is added directly to IPatientSchema in setuphandler.extend_patient_schema()
-    to ensure it's properly integrated into the Patient form at startup time.
+    """CNIC field for Patient
     """
     
     cnic = schema.TextLine(
@@ -31,4 +27,5 @@ class ICNICField(model.Schema):
         ),
         required=False,
     )
+
 
