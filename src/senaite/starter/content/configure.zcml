@@ -5,15 +5,12 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="senaite.starter">
 
-  <include package="plone.behavior" file="meta.zcml"/>
+  <include package="plone.schemaextender" file="meta.zcml"/>
 
   <!-- Patient Schema Extender (DX) -->
-  <plone:behavior
+  <adapter
       for="senaite.patient.interfaces.IPatient"
-      name="patient-cnic-extender"
-      title="Custom Patient Fields"
-      description="Add custom fields to the Patient Schema"
-      provides=".patient.IPatientSchemaExtender"
+      provides="plone.schemaextender.interfaces.ISchemaModifier"
       factory=".patient.PatientSchemaExtender"
       />
 
