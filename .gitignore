@@ -101,3 +101,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# my tweaked add-ons
+src/senaite.impress/
+src/senaite.patient.ajk/
