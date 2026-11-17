@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Patient CNIC field extension using Dexterity behavior and form provider
+Patient CNIC field extension
+Field is added directly to Patient schema in setuphandler
 """
 
 from plone.autoform import directives
@@ -15,6 +16,10 @@ from senaite.starter import messageFactory as _
 @provider(IFormFieldProvider)
 class ICNICField(model.Schema):
     """Add CNIC field to Patient
+    
+    Note: This interface is defined here for reference but is NOT used.
+    The CNIC field is added directly to IPatientSchema in setuphandler.extend_patient_schema()
+    to ensure it's properly integrated into the Patient form at startup time.
     """
     
     cnic = schema.TextLine(
@@ -26,5 +31,4 @@ class ICNICField(model.Schema):
         ),
         required=False,
     )
-
 
