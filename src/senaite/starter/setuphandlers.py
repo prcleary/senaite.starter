@@ -55,8 +55,11 @@ def extend_patient_schema(portal):
     try:
         from senaite.patient.content.patient import IPatientSchema
         
+        logger.info("IPatientSchema imported: {}".format(IPatientSchema))
+        logger.info("Current fields in IPatientSchema: {}".format(list(IPatientSchema.names())))
+        
         # Check if CNIC field already exists
-        if hasattr(IPatientSchema, 'cnic'):
+        if 'cnic' in IPatientSchema.names():
             logger.info("CNIC field already exists in Patient schema")
             return
         
@@ -72,10 +75,24 @@ def extend_patient_schema(portal):
         )
         
         IPatientSchema['cnic'] = cnic_field
-        logger.info("Successfully added CNIC field to Patient schema")
+        logger.info("CNIC field added to IPatientSchema")
+        logger.info("Fields after adding CNIC: {}".format(list(IPatientSchema.names())))
+        
+        # Try to invalidate any cached schema/form data
+        logger.info("Attempting to invalidate cached schemas...")
+        try:
+            from plone.dexterity.schema import SchemaCache
+            cache = SchemaCache()
+            cache.invalidate()
+            logger.info("SchemaCache invalidated")
+        except Exception as e:
+            logger.debug("Could not invalidate SchemaCache: {}".format(str(e)))
+        
+        logger.info("Successfully extended Patient schema with CNIC field")
         
     except Exception as e:
         logger.error("Error extending Patient schema: {}".format(str(e)))
         import traceback
         logger.error(traceback.format_exc())
+
 
