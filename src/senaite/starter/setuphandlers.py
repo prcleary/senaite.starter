@@ -36,29 +36,29 @@ def setup_behaviors(portal):
     print("\n=== SETUP_BEHAVIORS DEBUG ===")
     pt = api.get_tool("portal_types")
     for portal_type, behavior_ids in BEHAVIORS:
-        print(f"\nProcessing: {portal_type}")
+        print("\nProcessing: {}".format(portal_type))
         fti = pt.get(portal_type)
-        print(f"  FTI found: {fti is not None}")
+        print("  FTI found: {}".format(fti is not None))
         if fti is None:
-            print(f"  ERROR: FTI not found for {portal_type}")
+            print("  ERROR: FTI not found for {}".format(portal_type))
             continue
-        print(f"  FTI type: {type(fti)}")
-        print(f"  Has 'behaviors' attr: {hasattr(fti, 'behaviors')}")
+        print("  FTI type: {}".format(type(fti)))
+        print("  Has 'behaviors' attr: {}".format(hasattr(fti, 'behaviors')))
         if not hasattr(fti, "behaviors"):
             # Skip, type is not registered yet probably (AT2DX migration)
             logger.warn("Behaviors is missing: {} [SKIP]".format(portal_type))
-            print(f"  SKIP: No behaviors attribute")
+            print("  SKIP: No behaviors attribute")
             continue
         fti_behaviors = fti.behaviors
-        print(f"  Current behaviors: {fti_behaviors}")
+        print("  Current behaviors: {}".format(fti_behaviors))
         additional = list(filter(lambda b: b not in fti_behaviors, behavior_ids))
-        print(f"  Behaviors to add: {additional}")
+        print("  Behaviors to add: {}".format(additional))
         if additional:
             fti_behaviors = list(fti_behaviors)
             fti_behaviors.extend(additional)
             fti.behaviors = tuple(fti_behaviors)
-            print(f"  Updated behaviors: {fti.behaviors}")
+            print("  Updated behaviors: {}".format(fti.behaviors))
             logger.info("Added behaviors to {}: {}".format(portal_type, additional))
         else:
-            print(f"  No new behaviors to add")
+            print("  No new behaviors to add")
     print("=== SETUP_BEHAVIORS DONE ===\n")
