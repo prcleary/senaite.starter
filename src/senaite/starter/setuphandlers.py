@@ -65,24 +65,38 @@ def extend_analysisrequest_schema(portal):
     """
     logger.info("*** Extending AnalysisRequest Schema ***")
     try:
+        logger.info("Attempting to import AnalysisRequest schema...")
         from bika.lims.content.analysisrequest import schema as ar_schema
-        from senaite.starter.content.analysisrequest import get_cnic_field
+        logger.info("AnalysisRequest schema imported: {}".format(ar_schema))
         
-        # Check if CNIC field already exists
+        logger.info("Checking if CNIC field already exists...")
         if 'cnic' in ar_schema:
             logger.info("CNIC field already exists in AnalysisRequest schema")
             return
         
+        logger.info("CNIC field not found, importing get_cnic_field...")
+        from senaite.starter.content.analysisrequest import get_cnic_field
+        
         # Add CNIC field to the schema
+        logger.info("Creating CNIC field...")
         cnic_field = get_cnic_field()
+        logger.info("CNIC field created: {}".format(cnic_field))
+        
+        logger.info("Adding CNIC field to AnalysisRequest schema...")
         ar_schema.addField(cnic_field)
         
         logger.info("Successfully added CNIC field to AnalysisRequest schema")
+        logger.info("Schema now contains: {}".format(list(ar_schema.keys())))
         
+    except ImportError as e:
+        logger.error("Import error extending AnalysisRequest schema: {}".format(str(e)))
+        import traceback
+        logger.error(traceback.format_exc())
     except Exception as e:
         logger.error("Error extending AnalysisRequest schema: {}".format(str(e)))
         import traceback
         logger.error(traceback.format_exc())
+
 
 
 
