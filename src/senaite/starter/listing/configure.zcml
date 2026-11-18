@@ -9,4 +9,34 @@
     provides="senaite.app.listing.interfaces.IListingViewAdapter"
     factory=".sample_listing.SampleListingViewAdapter" />
 
+  <!-- CNIC column in sample listings
+       (same view/contexts senaite.patient adds its patient columns to) -->
+  <subscriber
+    for="senaite.core.browser.samples.view.SamplesView
+         bika.lims.interfaces.IAnalysisRequestsFolder"
+    provides="senaite.app.listing.interfaces.IListingViewAdapter"
+    factory=".cnic.SamplesListingAdapter" />
+  <subscriber
+    for="senaite.core.browser.samples.view.SamplesView
+         bika.lims.interfaces.IClient"
+    provides="senaite.app.listing.interfaces.IListingViewAdapter"
+    factory=".cnic.SamplesListingAdapter" />
+  <subscriber
+    for="senaite.core.browser.samples.view.SamplesView
+         bika.lims.interfaces.IBatch"
+    provides="senaite.app.listing.interfaces.IListingViewAdapter"
+    factory=".cnic.SamplesListingAdapter" />
+
+  <!-- CNIC column in patient listings (global and client patients) -->
+  <subscriber
+    for="senaite.patient.browser.patientfolder.PatientFolderView
+         senaite.patient.content.patientfolder.IPatientFolder"
+    provides="senaite.app.listing.interfaces.IListingViewAdapter"
+    factory=".cnic.PatientsListingAdapter" />
+  <subscriber
+    for="senaite.patient.browser.patientfolder.PatientFolderView
+         bika.lims.interfaces.IClient"
+    provides="senaite.app.listing.interfaces.IListingViewAdapter"
+    factory=".cnic.PatientsListingAdapter" />
+
 </configure>

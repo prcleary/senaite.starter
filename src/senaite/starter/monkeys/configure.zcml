@@ -1,0 +1,43 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:monkey="http://namespaces.plone.org/monkey"
+    i18n_domain="senaite.starter">
+
+  <include package="collective.monkeypatcher" />
+
+  <!-- NOTE: docstringWarning is disabled, because it would add a docstring to
+       the replacements and Zope publishes methods with a docstring -->
+
+  <!-- Sample CNIC -->
+  <monkey:patch
+      description="CNIC of the patient recorded in the sample"
+      class="bika.lims.content.analysisrequest.AnalysisRequest"
+      original="getCNIC"
+      ignoreOriginal="True"
+      docstringWarning="False"
+      replacement=".content.analysisrequest.getCNIC" />
+  <monkey:patch
+      description="Sets the CNIC of the patient recorded in the sample"
+      class="bika.lims.content.analysisrequest.AnalysisRequest"
+      original="setCNIC"
+      ignoreOriginal="True"
+      docstringWarning="False"
+      replacement=".content.analysisrequest.setCNIC" />
+
+  <!-- Patient CNIC -->
+  <monkey:patch
+      description="CNIC of the patient"
+      class="senaite.patient.content.patient.Patient"
+      original="getCNIC"
+      ignoreOriginal="True"
+      docstringWarning="False"
+      replacement=".content.patient.getCNIC" />
+  <monkey:patch
+      description="Sets the CNIC of the patient"
+      class="senaite.patient.content.patient.Patient"
+      original="setCNIC"
+      ignoreOriginal="True"
+      docstringWarning="False"
+      replacement=".content.patient.setCNIC" />
+
+</configure>

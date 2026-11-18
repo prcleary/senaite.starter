@@ -38,7 +38,10 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        "archetypes.schemaextender",
+        "collective.monkeypatcher",
         "senaite.lims",
+        "senaite.patient",
         "setuptools",
     ],
     extras_require={

@@ -19,4 +19,14 @@
       layer="senaite.starter.interfaces.ISenaiteStarter"
       />
 
+  <!-- Static resources (JavaScript), same mechanism as senaite.patient -->
+  <browser:viewlet
+      name="senaite.starter.static"
+      manager="plone.app.layout.viewlets.interfaces.IHtmlHead"
+      class="senaite.core.browser.viewlets.resources.ResourcesViewlet"
+      permission="zope2.View"
+      template="templates/resources.pt"
+      layer="senaite.starter.interfaces.ISenaiteStarter"
+      />
+
 </configure>

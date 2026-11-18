@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Patient CNIC field stored as object attribute
+"""CNIC field for Patients
+
+Patient is a Dexterity type, so the field is added through a behavior that is
+enabled on the Patient FTI by the setup handler. Values are stored as the
+`cnic` attribute of the patient.
 """
 
-from plone.autoform import directives
 from plone.autoform.interfaces import IFormFieldProvider
-from plone.dexterity.interfaces import IDexterityContent
 from plone.supermodel import model
-from zope.interface import provider, implementer
 from zope import schema
+from zope.interface import provider
 
 from senaite.starter import messageFactory as _
 
@@ -17,7 +18,7 @@ from senaite.starter import messageFactory as _
 class ICNICField(model.Schema):
     """CNIC field for Patient
     """
-    
+
     cnic = schema.TextLine(
         __name__='cnic',
         title=_(u"label_patient_cnic", default=u"CNIC"),
@@ -27,5 +28,3 @@ class ICNICField(model.Schema):
         ),
         required=False,
     )
-
-

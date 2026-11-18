@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="senaite.starter">
+
+  <!-- Default value of the CNIC field in the sample add form.
+       Looked up by name "<field name>_default_value_hook" in
+       bika.lims.browser.analysisrequest.add2.get_default_value -->
+  <adapter
+      for="senaite.starter.interfaces.ISenaiteStarter"
+      provides="bika.lims.interfaces.IGetDefaultFieldValueARAddHook"
+      factory=".addsample.CNICDefaultValueHook"
+      name="CNIC_default_value_hook" />
+
+</configure>

@@ -16,12 +16,20 @@
   <!-- Custom permissions -->
   <include package=".permissions"/>
 
+  <!-- senaite.patient first: its event subscribers (that create patients from
+       samples) must be registered before the ones of this package -->
+  <include package="senaite.patient" />
+
   <!-- Package includes -->
+  <include package=".adapters" />
   <include package=".browser" />
+  <include package=".catalog" />
   <include package=".content" />
   <include package=".impress"/>
   <include package=".jsonapi" />
   <include package=".listing" />
+  <include package=".monkeys" />
+  <include package=".subscribers" />
 
   <!-- Default Profile -->
   <genericsetup:registerProfile

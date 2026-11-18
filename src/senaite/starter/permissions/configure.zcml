@@ -5,4 +5,7 @@
   <!-- Sample permissions -->
   <permission id="senaite.starter.permissions.FieldEditExtendedField" title="senaite.starter: Field: Edit Extended Field"/>
 
+  <!-- Patient field permissions -->
+  <permission id="senaite.starter.permissions.FieldEditCNIC" title="senaite.starter: Field: Edit CNIC"/>
+
 </configure>

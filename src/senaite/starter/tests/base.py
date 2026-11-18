@@ -34,6 +34,7 @@ class SimpleTestLayer(PloneSandboxLayer):
         import plone.jsonapi.core
         import senaite.jsonapi
         import senaite.lims
+        import senaite.patient
         import senaite.starter
 
         # Load ZCML
@@ -44,6 +45,7 @@ class SimpleTestLayer(PloneSandboxLayer):
         self.loadZCML(package=senaite.impress)
         self.loadZCML(package=plone.jsonapi.core)
         self.loadZCML(package=senaite.jsonapi)
+        self.loadZCML(package=senaite.patient)
         self.loadZCML(package=senaite.starter)
 
         # Install product and call its initialize() function
@@ -57,6 +59,7 @@ class SimpleTestLayer(PloneSandboxLayer):
         # five:registerPackage directive and no initialize(), so
         # installProduct would only print "Could not install product
         # senaite.jsonapi". Loading its ZCML above is all it needs.
+        zope.installProduct(app, "senaite.patient")
         zope.installProduct(app, "senaite.starter")
 
     def setUpPloneSite(self, portal):
@@ -64,6 +67,7 @@ class SimpleTestLayer(PloneSandboxLayer):
 
         # Apply profiles
         applyProfile(portal, "senaite.core:default")
+        applyProfile(portal, "senaite.patient:default")
         applyProfile(portal, "senaite.starter:default")
 
         quickInstallProduct(portal, "senaite.starter", reinstall=True)

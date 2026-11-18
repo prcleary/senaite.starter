@@ -7,11 +7,14 @@ from senaite.impress.interfaces import ITemplateFinder
 from zope.component import getUtility
 from zope.component import queryUtility
 
+from senaite.starter.content.patient import ICNICField
 from senaite.starter.content.sampletype import ISampleTypeSchemaExtender
+from senaite.starter.permissions import FieldEditCNIC
 from senaite.starter.tests.base import SimpleTestCase
 from senaite.starter.interfaces import ISenaiteStarter
 
 BEHAVIOR_ID = ISampleTypeSchemaExtender.__identifier__
+PATIENT_BEHAVIOR_ID = ICNICField.__identifier__
 
 
 class TestSetup(SimpleTestCase):
@@ -40,6 +43,28 @@ class TestSetup(SimpleTestCase):
     def test_sampletype_behavior_assigned(self):
         fti = api.get_tool("portal_types").get("SampleType")
         self.assertIn(BEHAVIOR_ID, fti.behaviors)
+
+    def test_patient_cnic_behavior_assigned(self):
+        fti = api.get_tool("portal_types").get("Patient")
+        self.assertIn(PATIENT_BEHAVIOR_ID, fti.behaviors)
+
+    def test_cnic_catalogs(self):
+        patient_catalog = api.get_tool("senaite_catalog_patient")
+        self.assertIn("patient_cnic", patient_catalog.indexes())
+        sample_catalog = api.get_tool("senaite_catalog_sample")
+        self.assertIn("getCNIC", sample_catalog.schema())
+
+    def test_cnic_workflow_permissions(self):
+        wf_tool = api.get_tool("portal_workflow")
+        # read-only in verified samples, like senaite.patient's fields
+        workflow = wf_tool.getWorkflowById("senaite_sample_workflow")
+        self.assertIn(FieldEditCNIC, workflow.permissions)
+        verified = workflow.states.get("verified")
+        self.assertEqual(verified.permission_roles[FieldEditCNIC], ())
+        # read-only in inactive patients
+        workflow = wf_tool.getWorkflowById("senaite_patient_workflow")
+        inactive = workflow.states.get("inactive")
+        self.assertEqual(inactive.permission_roles[FieldEditCNIC], ())
 
     def test_jsonapi_registered(self):
         endpoint = "senaite.starter/version"

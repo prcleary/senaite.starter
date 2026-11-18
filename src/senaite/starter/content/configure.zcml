@@ -7,13 +7,28 @@
 
   <include package="plone.behavior" file="meta.zcml"/>
 
-  <!-- Patient CNIC Field Behavior -->
+  <!-- NOTE: archetypes.schemaextender has no meta.zcml -->
+  <include package="archetypes.schemaextender" />
+
+  <!-- Patient CNIC Field Behavior (DX) -->
   <plone:behavior
       for="senaite.patient.interfaces.IPatient"
       provides=".patient.ICNICField"
       title="CNIC Field"
       description="Add CNIC field to Patient"
       />
+
+  <!-- Sample CNIC field: schema extender for AnalysisRequest (AT) -->
+  <adapter
+      name="senaite.starter.analysisrequest.schemaextender"
+      provides="archetypes.schemaextender.interfaces.ISchemaExtender"
+      factory=".analysisrequest.AnalysisRequestSchemaExtender" />
+
+  <!-- Sample CNIC field: schema modifier for AnalysisRequest (AT) -->
+  <adapter
+      name="senaite.starter.analysisrequest.schemamodifier"
+      provides="archetypes.schemaextender.interfaces.ISchemaModifier"
+      factory=".analysisrequest.AnalysisRequestSchemaModifier" />
 
   <!-- Sample Type Schema Extender (DX) -->
   <plone:behavior

@@ -10,6 +10,16 @@
       <role name="LabClerk"/>
     </permission>
 
+    <!-- Patient field permissions. Same default roles that senaite.patient
+         grants for its own patient fields (Owner = the sample creator).
+         Workflow states can narrow this down (see setuphandlers.py) -->
+    <permission name="senaite.starter: Field: Edit CNIC" acquire="False">
+      <role name="Owner"/>
+      <role name="LabClerk"/>
+      <role name="LabManager"/>
+      <role name="Manager"/>
+    </permission>
+
   </permissions>
 
 </rolemap>
