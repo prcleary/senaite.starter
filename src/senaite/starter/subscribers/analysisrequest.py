@@ -7,6 +7,7 @@ from senaite.starter import check_installed
 from senaite.starter import logger
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import get_sample_cnic
+from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import set_patient_cnic
 
 
@@ -33,7 +34,8 @@ def update_patient_cnic(sample):
 
     Like senaite.patient, an existing value of the patient is never
     overwritten from a sample: the CNIC is only set if the patient has none
-    yet and the current user is allowed to modify the patient.
+    yet and the current user is allowed to modify the patient. A CNIC that
+    another patient has already is never set (CNIC is unique per patient).
 
     :returns: the updated patient or None
     """
@@ -57,6 +59,12 @@ def update_patient_cnic(sample):
         return None
 
     if not check_permission(ModifyPortalContent, patient):
+        return None
+
+    if not is_cnic_unique(cnic):
+        logger.warn("CNIC of sample '{}' belongs to another patient. "
+                    "Not set for Patient with MRN '{}'"
+                    .format(sample.getId(), mrn))
         return None
 
     logger.info("Setting CNIC of Patient with MRN '{}' from sample '{}'"

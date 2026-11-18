@@ -1,166 +1,206 @@
 # Branch `add-cnic-field`: CNIC for patients and samples
 
-Adds a **CNIC** (Computerized National Identity Card number) field to SENAITE
-2.6.0 / senaite.patient 1.5.0 as a pure add-on (no fork of senaite.patient).
+Adds a **CNIC** (Computerized National Identity Card number) to SENAITE 2.6.0
+/ senaite.patient 1.5.0 as a pure add-on (no fork of senaite.patient).
 
 This file is the single source of documentation for the branch.
 
 ## Status
 
-Implemented, byte-compiled and pyflakes-checked with Python 2.7.18, and every
-dotted name/import cross-checked against the pinned sources (senaite.core
-2.6.0, senaite.patient 1.5.0, senaite.app.listing 2.6.0,
-archetypes.schemaextender 3.0.2, collective.monkeypatcher 1.2.1).
-**Not yet run on a SENAITE instance**: see [Install](#install) and
-[Testing checklist](#testing-checklist).
+Implemented, byte-compiled and pyflakes-checked with Python 2.7.18. Every
+dotted name and import was cross-checked against the pinned sources
+(senaite.core 2.6.0, senaite.patient 1.5.0, senaite.app.listing 2.6.0,
+archetypes.schemaextender 3.0.2, collective.monkeypatcher 1.2.1). The
+JavaScript was exercised in a jsdom harness that simulates the lookup widgets
+and the JSON API. **Not yet run on a SENAITE instance**: see
+[Install](#install) and [Testing checklist](#testing-checklist).
 
-## Design: do what senaite.patient does for its own fields
+## Design
 
-senaite.patient does **not** show Patient fields on samples. It stores its
-patient fields (MRN, name, place of residence, date of birth, sex, gender)
-**on the sample** (AT schema extender), and **creates the Patient** from those
-values when a sample with a new MRN is registered. Each sample keeps the values
-recorded at registration; existing patients are never updated from samples.
+**CNIC is handled like the Medical Record Number (MRN), as a separate
+identifier.** CNIC and MRN never share a field, an index or a lookup. The
+only differences:
 
-CNIC follows the same model:
-
-- Sample field `CNIC` (AT extension field) placed after "Medical Record #".
-- Patient field `cnic` (Dexterity behavior). Values entered on patients in
-  earlier attempts on this branch are kept, since the behavior is the same.
-
-The list of files to replicate came from grepping senaite.patient 1.5.0 for
-every file that touches its closest equivalent field, `PatientAddress` (a plain
-text field stored on both sample and patient). That gives your original list
-plus the MRN auto-fill JavaScript.
-
-| senaite.patient 1.5.0 file | What it does for its patient fields | Equivalent here |
+| | MRN | CNIC |
 |---|---|---|
-| `content/analysisrequest.py`, `content/__init__.py` | AT schema extender with the sample fields; `ExtStringField` | [content/analysisrequest.py](src/senaite/starter/content/analysisrequest.py), [content/\_\_init\_\_.py](src/senaite/starter/content/__init__.py), [content/configure.zcml](src/senaite/starter/content/configure.zcml) |
-| `content/patient.py` | Patient schema field + `getX`/`setX` accessors | Behavior [content/patient.py](src/senaite/starter/content/patient.py) + `Patient.getCNIC`/`setCNIC` in [monkeys/](src/senaite/starter/monkeys/) |
-| `monkeys/configure.zcml`, `monkeys/content/analysisrequest.py` | `getX`/`setX` on `AnalysisRequest` (needed for catalog metadata columns) | [monkeys/configure.zcml](src/senaite/starter/monkeys/configure.zcml), [monkeys/content/](src/senaite/starter/monkeys/content/) |
-| `permissions.py`, `permissions.zcml` | One "Field: Edit ..." permission per field | `senaite.starter: Field: Edit CNIC` in [permissions/](src/senaite/starter/permissions/) |
-| `profiles/default/rolemap.xml` | Default roles: Owner, LabClerk, LabManager, Manager | [profiles/default/rolemap.xml](src/senaite/starter/profiles/default/rolemap.xml) |
-| `setuphandlers.py` (`WORKFLOW_TO_UPDATE`, `INDEXES`, `COLUMNS`) | Field permissions read-only in verified/published/dispatched/rejected/invalid/cancelled samples; sample catalog indexes/columns | [setuphandlers.py](src/senaite/starter/setuphandlers.py) (same states; `getCNIC` column) |
-| `profiles/default/workflows/senaite_patient_workflow/definition.xml` | Field permissions: acquired when active, none when inactive | [setuphandlers.py](src/senaite/starter/setuphandlers.py) updates that workflow (overriding the XML would replace senaite.patient's workflow) |
-| `catalog/patient_catalog.py`, `catalog/indexer/patient.py` | Patient indexes, `patient_searchable_text` (patients search box), `patient_searchable_mrn` (MRN lookup in the sample add form) | `patient_cnic` index; `patient_searchable_text` extended in [catalog/indexer/patient.py](src/senaite/starter/catalog/indexer/patient.py). `patient_searchable_mrn` is deliberately left alone: CNIC and MRN are kept separate |
-| `catalog/indexer/sample.py` | `IListingSearchableTextProvider` adds patient values to the samples search | Named provider in [catalog/indexer/sample.py](src/senaite/starter/catalog/indexer/sample.py) |
-| `adapters/listing.py` | MRN/Patient columns in sample listings (samples folder, client, batch) | CNIC column in [listing/cnic.py](src/senaite/starter/listing/cnic.py) |
-| `browser/patientfolder.py` | Columns of the patients listing | CNIC column (global and client patients) in [listing/cnic.py](src/senaite/starter/listing/cnic.py) |
-| `subscribers/analysisrequest.py`, `api.py` (`update_patient`) | Patient created from the sample values | [subscribers/analysisrequest.py](src/senaite/starter/subscribers/analysisrequest.py) copies the CNIC to that patient; helpers in [api.py](src/senaite/starter/api.py) |
-| `browser/patient/add2.py` | "Add sample" from inside a patient pre-fills the patient fields | `CNIC_default_value_hook` (senaite.core's hook for add-on fields) in [adapters/addsample.py](src/senaite/starter/adapters/addsample.py) |
-| `webpack/.../temporaryidentifierwidget.coffee` (bundled JS) | Selecting an existing MRN fills the patient fields; deselecting clears them | [browser/static/js/senaite.starter.cnic.js](src/senaite/starter/browser/static/js/senaite.starter.cnic.js), loaded by a head viewlet |
+| Required | When senaite.patient's "Require patient" setting is on | Never (optional) |
+| Temporary / autogenerated values | Yes | No (an identity card number cannot be generated) |
+| Links a sample to its patient | Yes | No. Picking a patient by CNIC sets that patient's MRN |
 
-Nothing here is assumed to happen "automatically". Each item above was checked
-against the senaite.core / senaite.app.listing source it relies on.
+Both are stored the way senaite.patient stores all patient data. Each sample
+records the value entered at registration (AT extension field `CNIC`). The
+patient has its own value (Dexterity behavior field `cnic`). The patient is
+created from the sample when a sample with a new MRN is registered. Existing
+patient values are never overwritten from samples.
+
+CNICs are stored and compared in the standard format `#####-#######-#`.
+13 digits entered with or without dashes or spaces are the same CNIC. Other
+values are kept as entered.
+
+### Equivalents of senaite.patient's MRN handling
+
+The files were found by grepping senaite.patient 1.5.0 for every file that
+handles its sample/patient fields (MRN and `PatientAddress`).
+
+| senaite.patient 1.5.0 | What it does for the MRN | CNIC equivalent |
+|---|---|---|
+| `content/analysisrequest.py` | Sample field with patient lookup widget, prominent in the sample header, disabled for secondary samples, placed first | [content/analysisrequest.py](src/senaite/starter/content/analysisrequest.py): same widget configuration, searching patients by CNIC only, placed after the MRN |
+| `content/fields.py`, `browser/widgets/temporaryidentifier.py` | `TemporaryIdentifierField` / `TemporaryIdentifierWidget` (QuerySelect lookup, view mode links to the patient) | [content/fields.py](src/senaite/starter/content/fields.py), [browser/widgets/cnic.py](src/senaite/starter/browser/widgets/cnic.py) (same, without temporary values) |
+| `validators.py` | Field validator | [validators.py](src/senaite/starter/validators.py): a CNIC of a sample must belong to no patient or to the sample's patient (sample header edits) |
+| `content/patient.py` | `mrn` field, unique (`validate_mrn` invariant, `setMRN` check), `getMRN`/`setMRN` | Behavior [content/patient.py](src/senaite/starter/content/patient.py): unique (invariant + setter check), placed after the MRN; `getCNIC`/`setCNIC` in [monkeys/](src/senaite/starter/monkeys/) |
+| `api.py` | `get_patient_by_mrn`, `is_mrn_unique`, `update_patient` | [api.py](src/senaite/starter/api.py): `get_patient_by_cnic`, `is_cnic_unique`, `set_patient_cnic`, `format_cnic` |
+| `monkeys/` | `getMedicalRecordNumberValue` etc. on `AnalysisRequest` (used by catalog metadata) | `getCNIC`/`setCNIC` on `AnalysisRequest` in [monkeys/](src/senaite/starter/monkeys/) |
+| `catalog/patient_catalog.py`, `catalog/indexer/patient.py` | `patient_mrn` index, `patient_searchable_mrn` (MRN lookup), MRN in `patient_searchable_text` | `patient_cnic` index, `patient_searchable_cnic` (CNIC lookup), CNIC in `patient_searchable_text`: [catalog/indexer/patient.py](src/senaite/starter/catalog/indexer/patient.py). `patient_searchable_mrn` is left alone |
+| `catalog/indexer/sample.py`, `setuphandlers.py` | `medical_record_number` index, `getMedicalRecordNumberValue` column, MRN in the samples search | `cnic` index, `getCNIC` column, CNIC in the samples search: [catalog/indexer/sample.py](src/senaite/starter/catalog/indexer/sample.py) |
+| `adapters/listing.py` | MRN column in sample listings, linked to the patient, info icon if it differs from the patient | [listing/cnic.py](src/senaite/starter/listing/cnic.py): same for the CNIC |
+| `browser/patientfolder.py` | MRN column in patient listings, linked to the patient | [listing/cnic.py](src/senaite/starter/listing/cnic.py): CNIC column, linked, sortable |
+| `permissions.py`, `permissions.zcml`, `profiles/default/rolemap.xml` | "Field: Edit MRN" permission (Owner, LabClerk, LabManager, Manager) | `senaite.starter: Field: Edit CNIC` in [permissions/](src/senaite/starter/permissions/) and [rolemap.xml](src/senaite/starter/profiles/default/rolemap.xml) |
+| `setuphandlers.py` (`WORKFLOW_TO_UPDATE`), `senaite_patient_workflow/definition.xml` | Read-only in verified/published/dispatched/rejected/invalid/cancelled samples and inactive patients | [setuphandlers.py](src/senaite/starter/setuphandlers.py): same states, also applied to existing objects |
+| `subscribers/analysisrequest.py` | Creates the patient from the sample | [subscribers/analysisrequest.py](src/senaite/starter/subscribers/analysisrequest.py): gives that patient the sample's CNIC |
+| `browser/patient/add2.py` | "Add sample" inside a patient pre-fills the MRN | `CNIC_default_value_hook` in [adapters/addsample.py](src/senaite/starter/adapters/addsample.py) |
+| `webpack/.../temporaryidentifierwidget.coffee` | Picking an MRN fills the patient fields; removing it clears them | [senaite.starter.cnic.js](src/senaite/starter/browser/static/js/senaite.starter.cnic.js): picking an MRN fills the CNIC (removing it clears it); picking a CNIC sets the MRN, so senaite.patient fills the rest |
+
+senaite.core's add form only offers a records validator hook (no per-field
+equivalent). The CNIC uses it in
+[adapters/addsample.py](src/senaite/starter/adapters/addsample.py) to check the
+CNIC together with the MRN of each new sample.
 
 ## Behaviour
 
-- **Sample add form**: CNIC input after "Medical Record #". Selecting an
-  existing patient's MRN fills it with that patient's CNIC. Clearing the MRN
-  clears it.
-- **Add sample from a patient**: CNIC pre-filled from the patient.
+- **Sample add form**: CNIC lookup after "Medical Record #".
+  - Typing searches existing (active) patients **by CNIC only**, with or
+    without dashes. Picking one sets that patient's MRN, and senaite.patient
+    then fills name, address, date of birth, sex and gender.
+  - A new CNIC can be entered for a new patient.
+  - Picking a patient by MRN fills their CNIC. Removing the MRN clears it.
+  - The MRN lookup never searches CNICs.
+- **Uniqueness**: a CNIC belongs to one patient.
+  - A sample with a CNIC that belongs to a patient can only be registered with
+    that patient's MRN (not another MRN, nor a temporary one). Pick the
+    patient through the CNIC lookup instead.
+  - The same new CNIC cannot be used for samples with different MRNs.
+  - On the patient form, a CNIC that another patient has is rejected.
 - **New patient from a sample**: the patient senaite.patient creates gets the
   sample's CNIC.
 - **Existing patient without CNIC**: filled from the next sample registered or
   edited with a CNIC, if the user may modify the patient. An existing patient
-  CNIC is **never overwritten** from a sample, as senaite.patient does for its
-  own fields. Change it on the patient record instead.
-- **Sample view**: CNIC in the header table. It is editable with the "Edit
-  CNIC" permission and read-only once the sample is verified (or published,
-  dispatched, rejected, invalid or cancelled).
-- **Listings**: CNIC column in the samples listings (samples, client, batch)
-  and the patients listings (global and client). It is not shown in a
-  patient's own samples listing, like MRN.
-- **Search**: the CNIC is searchable from the samples and patients search
-  boxes. It matches with or without dashes (both forms are indexed). The
-  "Medical Record #" lookup of the sample add form searches MRNs and names
-  only, exactly as in senaite.patient. CNIC and MRN are separate identifiers
-  and are never mixed.
-- **API / reports**: `sample.getCNIC()` and `patient.getCNIC()`. In
-  senaite.impress templates, use `model.CNIC` or `model.getCNIC()`.
+  CNIC is **never overwritten** from a sample. Change it on the patient record.
+- **Add sample from a patient**: CNIC pre-filled.
+- **Sample view**: CNIC shown prominently next to the MRN.
+  - Editable with the "Edit CNIC" permission, read-only once the sample is
+    verified (or published, dispatched, rejected, invalid or cancelled).
+  - In read-only mode it links to the patient.
+  - Disabled for secondary samples, like the MRN.
+- **Patient form**: CNIC right after the MRN.
+- **Listings**:
+  - Samples (samples, client, batch): CNIC column linked to the patient, with
+    an info icon if it differs from the patient's CNIC.
+  - Patients (global and client): CNIC column, linked and sortable.
+  - Not shown in a patient's own samples listing, like the MRN.
+- **Search**: the samples and patients search boxes find the CNIC with or
+  without dashes.
+- **API / reports**: `sample.getCNIC()`, `patient.getCNIC()`,
+  `senaite.starter.api.get_patient_by_cnic(cnic)`. In senaite.impress
+  templates, use `model.CNIC`.
 
 ## Install
 
 1. `git pull` on branch `add-cnic-field`.
-2. Re-run buildout. `setup.py` now declares `senaite.patient`,
+2. Re-run buildout. `setup.py` declares `senaite.patient`,
    `archetypes.schemaextender` and `collective.monkeypatcher`. All three are
    already in the working set and pinned.
 3. Restart the instance.
 4. Reinstall senaite.starter. In Site Setup → Add-ons, uninstall then install.
    Alternatively, in the ZMI use `portal_setup` → Import → "SENAITE.STARTER" →
-   "Import all steps". The profile now depends on `senaite.patient:default`.
+   "Import all steps". The profile depends on `senaite.patient:default`.
 
 The installer is idempotent and:
 
 - enables the CNIC behavior on the Patient type
-- adds the `patient_cnic` index (patient catalog) and the `getCNIC` metadata
-  column (sample catalog)
-- reindexes patients that already have a CNIC
-- sets the CNIC permission in the sample and patient workflows
-- applies that permission to existing samples in the read-only states and to
-  inactive patients
+- adds the indexes `patient_cnic` and `patient_searchable_cnic` (patient
+  catalog) and `cnic` (sample catalog), plus the `getCNIC` column (sample
+  catalog)
+- stores CNICs already entered on patients in standard format and reindexes
+  those patients
+- sets the CNIC permission in the sample and patient workflows and applies it
+  to existing samples in the read-only states and to inactive patients
 
-The last step loads every such sample once, so it can take a while on a large
-production database.
+Adding the sample `cnic` index indexes all samples once. Applying the
+permission loads every sample in the read-only states once. Both can take a
+while on a large production database.
 
 Quick ZMI checks afterwards:
 
 - `portal_types/Patient` → behaviors include
   `senaite.starter.content.patient.ICNICField`.
-- `senaite_catalog_patient` → Indexes has `patient_cnic`.
-- `senaite_catalog_sample` → Metadata has `getCNIC`.
+- `senaite_catalog_patient` → Indexes has `patient_cnic` and
+  `patient_searchable_cnic`.
+- `senaite_catalog_sample` → Indexes has `cnic`, Metadata has `getCNIC`.
 - `portal_workflow/senaite_sample_workflow/states/verified` → Permissions:
   "senaite.starter: Field: Edit CNIC" has no roles and is not acquired.
 
 ## Testing checklist
 
 - [ ] Instance starts and the install reports no errors in the event log.
-- [ ] Sample add form shows CNIC after "Medical Record #".
-- [ ] Register a sample with a **new** MRN and a CNIC. The created patient has
-      that CNIC.
-- [ ] New sample, **select** that MRN: the CNIC is filled in. Clear the MRN:
-      the CNIC is cleared.
+- [ ] Sample add form: CNIC lookup after "Medical Record #".
+- [ ] New MRN + new CNIC: the created patient has the CNIC (standard format).
+- [ ] New sample, pick that patient **by MRN**: CNIC filled. Remove the MRN:
+      CNIC cleared.
+- [ ] New sample, type the CNIC **without dashes** and pick the patient: MRN,
+      name, address, date of birth, sex and gender filled.
+- [ ] Same, with "Temporary" MRN ticked first: it gets unticked and the
+      patient's MRN is set.
+- [ ] Register a sample with an existing patient's CNIC but another MRN: the
+      form rejects it.
+- [ ] Two samples in one registration with the same new CNIC and different
+      MRNs: rejected.
+- [ ] Patient form: CNIC after MRN; another patient's CNIC is rejected.
+- [ ] Typing a CNIC in "Medical Record #" does **not** find the patient, and
+      typing an MRN in "CNIC" does not either.
 - [ ] Patient → Samples → Add: the CNIC is pre-filled.
-- [ ] Samples listing: CNIC column. Searching the CNIC with and without
-      dashes finds the sample.
-- [ ] Patients listing: CNIC column, sortable. Searching the CNIC finds the
-      patient.
-- [ ] Sample add form: typing a CNIC in "Medical Record #" does **not** find
-      the patient (the MRN lookup only matches MRNs and names).
-- [ ] Verify a sample: CNIC is no longer editable in its header table.
+- [ ] Samples listing: CNIC column linked to the patient. Change the patient's
+      CNIC: the sample shows the info icon. The search finds the sample with
+      and without dashes.
+- [ ] Patients listing: CNIC column, linked and sortable; the search finds it.
+- [ ] Sample view: CNIC prominent. After verification it is read-only and
+      links to the patient.
 - [ ] Log in as a client contact: registering a sample with a CNIC works.
-- [ ] Automated tests: `bin/test -s senaite.starter`. They include new checks
-      for the behavior, catalogs and workflow permissions.
+- [ ] Automated tests: `bin/test -s senaite.starter`.
 
 ## Notes and limitations
 
+- **Children registered under a parent's CNIC** are not possible, since a
+  CNIC belongs to one patient. Leave the CNIC of such patients empty.
 - **Field order in the add form**: if "Manage form fields" in the Sample Add
   form was ever saved, fields missing from that saved order (CNIC) go last.
-  Move CNIC there.
+  Move CNIC there. The same applies to "Manage sample fields" for the sample
+  header.
 - **Reinstalling or upgrading senaite.patient** can re-import the Patient type
   and drop the CNIC behavior. The data is kept. Reinstall senaite.starter to
   enable it again.
-- **Not included**: CNIC uniqueness or format validation, and CNIC on the
-  result report templates (use `model.CNIC`).
-- The `getCNIC`/`setCNIC` monkey patches are registered without docstrings, so
-  Zope does not publish them as URL-callable methods. Otherwise
-  `setCNIC` could be called by URL, bypassing the field permission.
+- **New values** in the lookup are shown in red until saved, as senaite.core
+  shows any typed value without a matching record (same as a new MRN).
+- **Not included**: CNIC format validation (any value can be entered, 13 digit
+  CNICs are normalised), and CNIC on the result report templates.
+- The `getCNIC`/`setCNIC` monkey patches have no docstrings, so Zope does not
+  publish them as URL-callable methods (which would bypass the field
+  permission).
 - The template's unregistered `content/sample.py` example
   (`ProductionBatchNumber`) is intentionally left unregistered.
 
-## Why the earlier attempts on this branch did not work
+## History of this branch
 
-- Adding only a Dexterity behavior to Patient: Patient fields are never shown
-  on samples. senaite.patient copies values in the other direction, from
-  sample to patient.
-- Modifying the AnalysisRequest schema in the install handler: this changes
-  the class schema in memory only, in that one process, and is lost on
-  restart.
-- "Register `SampleSchemaExtender`" (previous README): would fail at startup,
-  because `ExtStringField` did not exist in `content/__init__.py`. It would
-  also add the template's `ProductionBatchNumber` field to every sample.
-- "Catalogs index new fields automatically": they do not. The samples search
-  uses fixed fields plus provider adapters, the patients search uses
-  `patient_searchable_text`, and listings read catalog metadata columns.
-- The `IOError ... schemaextender/meta.zcml`: archetypes.schemaextender has
-  no `meta.zcml`. Its `configure.zcml` is included instead.
+- Adding only a Dexterity behavior to Patient did not show the CNIC on samples.
+  senaite.patient copies data from sample to patient, not the other way.
+- Modifying the AnalysisRequest schema in the install handler only changed it
+  in memory, in one process, until restart.
+- Registering the template's `SampleSchemaExtender` would have failed at
+  startup (`ExtStringField` was missing) and added `ProductionBatchNumber` to
+  every sample.
+- Catalogs do not index new fields automatically. Samples search fixed fields
+  plus provider adapters, the patients search uses `patient_searchable_text`,
+  and listings read catalog metadata columns.
+- `IOError ... schemaextender/meta.zcml`: archetypes.schemaextender has no
+  `meta.zcml`. Its `configure.zcml` is included instead.
+- An intermediate version added the CNIC to the MRN lookup. It was removed:
+  CNIC and MRN are separate identifiers.

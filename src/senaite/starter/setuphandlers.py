@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import transaction
+from Acquisition import aq_base
 from bika.lims import api
 from Products.DCWorkflow.utils import modifyRolesForPermission
 from senaite.core.catalog import SAMPLE_CATALOG
@@ -9,6 +10,8 @@ from senaite.core.workflow import SAMPLE_WORKFLOW
 from senaite.patient.catalog import PATIENT_CATALOG
 
 from senaite.starter import logger
+from senaite.starter.api import format_cnic
+from senaite.starter.api import PATIENT_CNIC_FIELD
 from senaite.starter.permissions import FieldEditCNIC
 
 PATIENT_WORKFLOW = "senaite_patient_workflow"
@@ -25,6 +28,10 @@ BEHAVIORS = [
 # Tuples of (catalog, index_name, index_attribute, index_type)
 INDEXES = [
     (PATIENT_CATALOG, "patient_cnic", "", "FieldIndex"),
+    # CNIC lookup of the sample add form (like patient_searchable_mrn)
+    (PATIENT_CATALOG, "patient_searchable_cnic", "", "ZCTextIndex"),
+    # like senaite.patient's medical_record_number index
+    (SAMPLE_CATALOG, "cnic", "", "KeywordIndex"),
 ]
 
 # Tuples of (catalog, column_name)
@@ -33,9 +40,10 @@ COLUMNS = [
     (SAMPLE_CATALOG, "getCNIC"),
 ]
 
-# senaite.patient's text indexes reindexed for patients that have a CNIC
-PATIENT_TEXT_INDEXES = [
-    # extended with the CNIC
+# Patient indexes reindexed for patients that have a CNIC
+PATIENT_CNIC_INDEXES = [
+    "patient_cnic",
+    "patient_searchable_cnic",
     "patient_searchable_text",
     # not extended: reindexed to drop the CNIC an earlier development version
     # of this branch added to the MRN lookup of the sample add form
@@ -119,12 +127,13 @@ def setup_catalogs(portal):
     # adds the missing indexes (and indexes them) and columns
     setup_other_catalogs(portal, indexes=INDEXES, columns=COLUMNS)
 
-    # patients that got a CNIC before the extended indexers were in place
-    reindex_patients_with_cnic(portal)
+    # patients that got a CNIC before the current indexers were in place
+    update_patients_with_cnic(portal)
 
 
-def reindex_patients_with_cnic(portal):
-    """Reindexes the text indexes of patients that have a CNIC
+def update_patients_with_cnic(portal):
+    """Stores the CNIC of patients that have one in standard format and
+    reindexes their CNIC indexes
     """
     catalog = api.get_tool(PATIENT_CATALOG)
     values = filter(None, catalog.uniqueValuesFor("patient_cnic"))
@@ -132,10 +141,14 @@ def reindex_patients_with_cnic(portal):
         return
     query = {"portal_type": "Patient", "patient_cnic": list(values)}
     brains = catalog.unrestrictedSearchResults(query)
-    logger.info("Reindexing {} patients with CNIC ...".format(len(brains)))
+    logger.info("Updating {} patients with CNIC ...".format(len(brains)))
     for brain in brains:
         obj = brain._unrestrictedGetObject()
-        catalog.catalog_object(obj, idxs=PATIENT_TEXT_INDEXES,
+        stored = getattr(aq_base(obj), PATIENT_CNIC_FIELD, None)
+        cnic = format_cnic(stored)
+        if stored != cnic:
+            setattr(obj, PATIENT_CNIC_FIELD, cnic or None)
+        catalog.catalog_object(obj, idxs=PATIENT_CNIC_INDEXES,
                                update_metadata=0)
 
 

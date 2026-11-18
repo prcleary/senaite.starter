@@ -20,9 +20,19 @@ def extend_searchable_text(text, tokens):
 
 @indexer(IPatient, IPatientCatalog)
 def patient_cnic(instance):
-    """Index the CNIC of the patient
+    """Index the CNIC of the patient (standard format)
     """
     return get_patient_cnic(instance).encode("utf-8")
+
+
+@indexer(IPatient, IPatientCatalog)
+def patient_searchable_cnic(instance):
+    """Index used to search patients from the CNIC field of the sample add
+    form, like patient_searchable_mrn is for the Medical Record # field.
+    Contains the CNIC only
+    """
+    tokens = get_cnic_search_tokens(get_patient_cnic(instance))
+    return u" ".join(tokens).encode("utf-8")
 
 
 # Registered for the patient catalog interface, which is more specific than

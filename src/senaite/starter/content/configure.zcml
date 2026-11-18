@@ -14,6 +14,7 @@
   <plone:behavior
       for="senaite.patient.interfaces.IPatient"
       provides=".patient.ICNICField"
+      factory=".patient.CNICFieldAdapter"
       title="CNIC Field"
       description="Add CNIC field to Patient"
       />

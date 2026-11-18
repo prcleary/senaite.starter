@@ -2,6 +2,9 @@
     xmlns="http://namespaces.zope.org/zope"
     i18n_domain="senaite.starter">
 
+  <!-- Sample (aka AnalysisRequest) Index Adapters -->
+  <adapter name="cnic" factory=".sample.cnic" />
+
   <!-- Sample (aka AnalysisRequest): CNIC tokens for listing_searchable_text.
        Named, so it is used in addition to senaite.patient's provider -->
   <adapter
@@ -10,6 +13,7 @@
 
   <!-- Patient Indexes -->
   <adapter name="patient_cnic" factory=".patient.patient_cnic" />
+  <adapter name="patient_searchable_cnic" factory=".patient.patient_searchable_cnic" />
   <adapter name="patient_searchable_text" factory=".patient.patient_searchable_text" />
 
 </configure>

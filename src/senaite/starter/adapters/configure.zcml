@@ -11,4 +11,13 @@
       factory=".addsample.CNICDefaultValueHook"
       name="CNIC_default_value_hook" />
 
+  <!-- Validation of the CNICs of the samples to be created (sample add form).
+       Looked up as named adapters in
+       bika.lims.browser.analysisrequest.add2.ajax_submit -->
+  <adapter
+      for="senaite.starter.interfaces.ISenaiteStarter"
+      provides="bika.lims.interfaces.IAddSampleRecordsValidator"
+      factory=".addsample.CNICRecordsValidator"
+      name="senaite.starter.cnic" />
+
 </configure>
