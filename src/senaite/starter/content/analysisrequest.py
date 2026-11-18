@@ -22,8 +22,9 @@ from senaite.starter.validators import CNICValidator
 from zope.component import adapts
 from zope.interface import implementer
 
-# The CNIC field is placed right after this senaite.patient field
-CNIC_AFTER_FIELD = "MedicalRecordNumber"
+# senaite.patient's Medical Record Number field. CNIC is placed right after it
+MRN_FIELD = "MedicalRecordNumber"
+CNIC_AFTER_FIELD = MRN_FIELD
 
 # Configured like senaite.patient's MedicalRecordNumberField, but optional,
 # without temporary values and searching patients by their CNIC only
@@ -111,7 +112,8 @@ class AnalysisRequestSchemaExtender(object):
 
 @implementer(ISchemaModifier, IBrowserLayerAwareExtender)
 class AnalysisRequestSchemaModifier(object):
-    """Moves the CNIC field next to the Medical Record Number
+    """Moves the CNIC field next to the Medical Record Number and displays
+    the Medical Record Number as entered
     """
     adapts(IAnalysisRequest)
     layer = ISenaiteStarter
@@ -125,4 +127,14 @@ class AnalysisRequestSchemaModifier(object):
         names = schema.keys()
         if SAMPLE_CNIC_FIELD in names and CNIC_AFTER_FIELD in names:
             schema.moveField(SAMPLE_CNIC_FIELD, after=CNIC_AFTER_FIELD)
+
+        # Without display template, the MRN widget shows the MRN as entered
+        # instead of rendering new MRNs (no matching patient yet) in red as
+        # "broken reference", like the CNIC widget. senaite.patient modifies
+        # its shared field objects the same way in its schema modifier
+        mrn = schema.get(MRN_FIELD)
+        if mrn is not None:
+            if getattr(mrn.widget, "display_template", None) != "":
+                mrn.widget.display_template = ""
+
         return schema

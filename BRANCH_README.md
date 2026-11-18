@@ -143,6 +143,8 @@ Quick ZMI checks afterwards:
 
 - [ ] Instance starts and the install reports no errors in the event log.
 - [ ] Sample add form: CNIC lookup after "Medical Record #".
+- [ ] A new MRN and a new CNIC are shown as plain text, not in red as
+      "broken reference".
 - [ ] New MRN + new CNIC: the created patient has the CNIC (standard format).
 - [ ] New sample, pick that patient **by MRN**: CNIC filled. Remove the MRN:
       CNIC cleared.
@@ -178,8 +180,14 @@ Quick ZMI checks afterwards:
 - **Reinstalling or upgrading senaite.patient** can re-import the Patient type
   and drop the CNIC behavior. The data is kept. Reinstall senaite.starter to
   enable it again.
-- **New values** in the lookup are shown in red until saved, as senaite.core
-  shows any typed value without a matching record (same as a new MRN).
+- **MRN and CNIC are displayed as entered** in the sample add form and header.
+  senaite.core's lookup widget renders values through a display template that
+  needs a matching record. A typed value without one (a new MRN or CNIC, i.e.
+  a new patient) is shown in red as "broken reference", although it is saved
+  correctly. The add-on removes the display template of both widgets, so
+  values show as plain text. Side effect: picking a patient in the MRN field
+  shows the MRN instead of the patient's name (the name fields below are filled
+  as before).
 - **Not included**: CNIC format validation (any value can be entered, 13 digit
   CNICs are normalised), and CNIC on the result report templates.
 - The `getCNIC`/`setCNIC` monkey patches have no docstrings, so Zope does not

@@ -19,8 +19,10 @@ class CNICWidget(QuerySelectWidget):
     _properties.update({
         "multi_valued": False,
         "allow_user_value": True,
-        # display the CNIC of the selected patient, not the patient's title
-        "display_template": "${cnic}",
+        # Display the value as entered. With a display template, senaite.core
+        # renders values without a matching patient (i.e. new CNICs) in red as
+        # "broken reference". View mode uses `render_reference` instead.
+        "display_template": "",
     })
 
     def process_form(self, instance, field, form, empty_marker=None,
@@ -37,15 +39,6 @@ class CNICWidget(QuerySelectWidget):
         if not values:
             return None, {}
         return values[0], {}
-
-    def get_render_data(self, context, field, reference, template):
-        """Provides the data to render the display template
-        """
-        data = super(CNICWidget, self).get_render_data(
-            context, field, reference, template)
-        if data:
-            data["cnic"] = reference
-        return data
 
     def render_reference(self, context, field, reference):
         """Renders the CNIC in view mode, linked to the patient of the sample
