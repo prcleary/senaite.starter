@@ -25,9 +25,13 @@ def patient_cnic(instance):
     return get_patient_cnic(instance).encode("utf-8")
 
 
-# The two indexers below are registered for the patient catalog interface,
-# which is more specific than the IZCatalog default senaite.patient uses, so
-# they take precedence while still delegating to senaite.patient's indexers.
+# Registered for the patient catalog interface, which is more specific than
+# the IZCatalog default senaite.patient uses, so it takes precedence while
+# still delegating to senaite.patient's indexer.
+#
+# NOTE: patient_searchable_mrn (the "Medical Record #" lookup of the sample
+#       add form) is deliberately not extended: a CNIC typed in the MRN field
+#       would match unrelated patients or end up as the MRN of a new patient.
 
 @indexer(IPatient, IPatientCatalog)
 def patient_searchable_text(instance):
@@ -35,15 +39,5 @@ def patient_searchable_text(instance):
     the CNIC
     """
     text = patient_indexers.patient_searchable_text.callable(instance)
-    tokens = get_cnic_search_tokens(get_patient_cnic(instance))
-    return extend_searchable_text(text, tokens)
-
-
-@indexer(IPatient, IPatientCatalog)
-def patient_searchable_mrn(instance):
-    """Index used to search patients from the Medical Record # field of the
-    sample add form, extended with the CNIC
-    """
-    text = patient_indexers.patient_searchable_mrn.callable(instance)
     tokens = get_cnic_search_tokens(get_patient_cnic(instance))
     return extend_searchable_text(text, tokens)

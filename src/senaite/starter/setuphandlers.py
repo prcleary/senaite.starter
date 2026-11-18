@@ -33,9 +33,12 @@ COLUMNS = [
     (SAMPLE_CATALOG, "getCNIC"),
 ]
 
-# senaite.patient's text indexes of patients extended with the CNIC
+# senaite.patient's text indexes reindexed for patients that have a CNIC
 PATIENT_TEXT_INDEXES = [
+    # extended with the CNIC
     "patient_searchable_text",
+    # not extended: reindexed to drop the CNIC an earlier development version
+    # of this branch added to the MRN lookup of the sample add form
     "patient_searchable_mrn",
 ]
 

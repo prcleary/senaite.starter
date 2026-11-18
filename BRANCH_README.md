@@ -42,7 +42,7 @@ plus the MRN auto-fill JavaScript.
 | `profiles/default/rolemap.xml` | Default roles: Owner, LabClerk, LabManager, Manager | [profiles/default/rolemap.xml](src/senaite/starter/profiles/default/rolemap.xml) |
 | `setuphandlers.py` (`WORKFLOW_TO_UPDATE`, `INDEXES`, `COLUMNS`) | Field permissions read-only in verified/published/dispatched/rejected/invalid/cancelled samples; sample catalog indexes/columns | [setuphandlers.py](src/senaite/starter/setuphandlers.py) (same states; `getCNIC` column) |
 | `profiles/default/workflows/senaite_patient_workflow/definition.xml` | Field permissions: acquired when active, none when inactive | [setuphandlers.py](src/senaite/starter/setuphandlers.py) updates that workflow (overriding the XML would replace senaite.patient's workflow) |
-| `catalog/patient_catalog.py`, `catalog/indexer/patient.py` | Patient indexes, `patient_searchable_text` (patients search box), `patient_searchable_mrn` (MRN lookup in the sample add form) | `patient_cnic` index; both text indexers extended in [catalog/indexer/patient.py](src/senaite/starter/catalog/indexer/patient.py) |
+| `catalog/patient_catalog.py`, `catalog/indexer/patient.py` | Patient indexes, `patient_searchable_text` (patients search box), `patient_searchable_mrn` (MRN lookup in the sample add form) | `patient_cnic` index; `patient_searchable_text` extended in [catalog/indexer/patient.py](src/senaite/starter/catalog/indexer/patient.py). `patient_searchable_mrn` is deliberately left alone: CNIC and MRN are kept separate |
 | `catalog/indexer/sample.py` | `IListingSearchableTextProvider` adds patient values to the samples search | Named provider in [catalog/indexer/sample.py](src/senaite/starter/catalog/indexer/sample.py) |
 | `adapters/listing.py` | MRN/Patient columns in sample listings (samples folder, client, batch) | CNIC column in [listing/cnic.py](src/senaite/starter/listing/cnic.py) |
 | `browser/patientfolder.py` | Columns of the patients listing | CNIC column (global and client patients) in [listing/cnic.py](src/senaite/starter/listing/cnic.py) |
@@ -72,8 +72,10 @@ against the senaite.core / senaite.app.listing source it relies on.
   and the patients listings (global and client). It is not shown in a
   patient's own samples listing, like MRN.
 - **Search**: the CNIC is searchable from the samples and patients search
-  boxes, and from the "Medical Record #" lookup in the sample add form. It
-  matches with or without dashes (both forms are indexed).
+  boxes. It matches with or without dashes (both forms are indexed). The
+  "Medical Record #" lookup of the sample add form searches MRNs and names
+  only, exactly as in senaite.patient. CNIC and MRN are separate identifiers
+  and are never mixed.
 - **API / reports**: `sample.getCNIC()` and `patient.getCNIC()`. In
   senaite.impress templates, use `model.CNIC` or `model.getCNIC()`.
 
@@ -123,7 +125,8 @@ Quick ZMI checks afterwards:
       dashes finds the sample.
 - [ ] Patients listing: CNIC column, sortable. Searching the CNIC finds the
       patient.
-- [ ] Sample add form: typing a CNIC in "Medical Record #" finds the patient.
+- [ ] Sample add form: typing a CNIC in "Medical Record #" does **not** find
+      the patient (the MRN lookup only matches MRNs and names).
 - [ ] Verify a sample: CNIC is no longer editable in its header table.
 - [ ] Log in as a client contact: registering a sample with a CNIC works.
 - [ ] Automated tests: `bin/test -s senaite.starter`. They include new checks
@@ -137,9 +140,8 @@ Quick ZMI checks afterwards:
 - **Reinstalling or upgrading senaite.patient** can re-import the Patient type
   and drop the CNIC behavior. The data is kept. Reinstall senaite.starter to
   enable it again.
-- **Not included**: CNIC uniqueness or format validation, a CNIC column in the
-  MRN lookup dropdown, and CNIC on the result report templates (use
-  `model.CNIC`).
+- **Not included**: CNIC uniqueness or format validation, and CNIC on the
+  result report templates (use `model.CNIC`).
 - The `getCNIC`/`setCNIC` monkey patches are registered without docstrings, so
   Zope does not publish them as URL-callable methods. Otherwise
   `setCNIC` could be called by URL, bypassing the field permission.

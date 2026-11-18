@@ -11,6 +11,5 @@
   <!-- Patient Indexes -->
   <adapter name="patient_cnic" factory=".patient.patient_cnic" />
   <adapter name="patient_searchable_text" factory=".patient.patient_searchable_text" />
-  <adapter name="patient_searchable_mrn" factory=".patient.patient_searchable_mrn" />
 
 </configure>
