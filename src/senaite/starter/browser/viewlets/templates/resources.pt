@@ -1,2 +1,2 @@
 <script type="text/javascript"
-        tal:attributes="src string:${view/site_url}/++plone++senaite.starter.static/js/senaite.starter.cnic.js?v=3"></script>
+        tal:attributes="src string:${view/site_url}/++plone++senaite.starter.static/js/senaite.starter.cnic.js?v=4"></script>

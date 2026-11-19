@@ -31,12 +31,18 @@ a separate identifier: CNIC and MRN never share a field, an index or a lookup.
 - **Uniqueness**: a CNIC that belongs to a patient can only be used with that
   patient's MRN. This is checked in the add form, the sample header and the
   patient form. The same new CNIC cannot be used for samples with different
-  MRNs.
-- **Sample to patient**: the patient senaite.patient creates from a sample
-  gets the sample's CNIC. An existing patient without a CNIC gets it from the
-  next sample that has one. A patient's CNIC is never overwritten from a
-  sample.
-- **Add sample from a patient**: CNIC pre-filled.
+  MRNs, and samples registered together with the same MRN must have the same
+  CNIC.
+- **Sample to patient**: the CNIC is entered and corrected in samples, so
+  the patient record never needs to be opened. Registering a sample, or
+  changing the CNIC of an open sample, sets its CNIC on the patient with that
+  MRN, replacing a different one. Other changes to a sample only fill an
+  empty patient CNIC, e.g. when a temporary MRN is replaced. An empty CNIC
+  never removes the patient's CNIC, and partitions and secondary samples
+  (copies of another sample) never replace it.
+- **Add sample from a patient**: CNIC pre-filled. With "Copy to new", the
+  copied CNICs are refreshed from the patient records, so that an outdated
+  CNIC is not set back on the patient.
 - **Sample view**: CNIC prominent next to the MRN. Read-only once the sample
   is verified, published, dispatched, rejected, invalid or cancelled, and
   then linked to the patient. Disabled for secondary samples.
@@ -72,8 +78,8 @@ add-on. senaite.starter paths are relative to
 | Sample field: schema extender for the add-on's browser layer, plus a schema modifier that places it after the MRN | [content/analysisrequest.py](src/senaite/starter/content/analysisrequest.py), [content/configure.zcml](src/senaite/starter/content/configure.zcml) | `content/analysisrequest.py` |
 | Patient field: behavior, enabled on install | [content/patient.py](src/senaite/starter/content/patient.py), [content/configure.zcml](src/senaite/starter/content/configure.zcml), `BEHAVIORS` in [setuphandlers.py](src/senaite/starter/setuphandlers.py) | `content/patient.py` |
 | `getCNIC`/`setCNIC` on sample and patient, for catalog metadata, API and reports | [monkeys/](src/senaite/starter/monkeys) | `monkeys/content/analysisrequest.py`, `content/patient.py` |
-| Copy from sample to patient. Must run after senaite.patient's subscribers, so [configure.zcml](src/senaite/starter/configure.zcml) includes senaite.patient first | [subscribers/](src/senaite/starter/subscribers) | `subscribers/analysisrequest.py` |
-| Fill from the patient in the add form: when an MRN is picked (script loaded by a viewlet), and when a sample is added from a patient | [senaite.starter.cnic.js](src/senaite/starter/browser/static/js/senaite.starter.cnic.js), [browser/viewlets/](src/senaite/starter/browser/viewlets), `CNICDefaultValueHook` in [adapters/](src/senaite/starter/adapters) | `webpack/app/components/temporaryidentifierwidget.coffee`, `browser/patient/add2.py` |
+| Copy from sample to patient. senaite.patient only creates patients from samples, the CNIC also updates existing ones: the field flags a CNIC changed on an existing sample. Must run after senaite.patient's subscribers, so [configure.zcml](src/senaite/starter/configure.zcml) includes senaite.patient first | [subscribers/](src/senaite/starter/subscribers), [content/fields.py](src/senaite/starter/content/fields.py) | `subscribers/analysisrequest.py` |
+| Fill from the patient in the add form: when an MRN is picked or samples are copied ("Copy to new"), with a script loaded by a viewlet, and when a sample is added from a patient | [senaite.starter.cnic.js](src/senaite/starter/browser/static/js/senaite.starter.cnic.js), [browser/viewlets/](src/senaite/starter/browser/viewlets), `CNICDefaultValueHook` in [adapters/](src/senaite/starter/adapters) | `webpack/app/components/temporaryidentifierwidget.coffee`, `browser/patient/add2.py` |
 | Catalog indexes and sample metadata column, created on install | [catalog/](src/senaite/starter/catalog), `INDEXES` and `COLUMNS` in [setuphandlers.py](src/senaite/starter/setuphandlers.py) | `catalog/patient_catalog.py`, `catalog/indexer/`, `setuphandlers.py` |
 | Search boxes of the sample and patient listings | `IListingSearchableTextProvider` in [catalog/indexer/sample.py](src/senaite/starter/catalog/indexer/sample.py), `patient_searchable_text` in [catalog/indexer/patient.py](src/senaite/starter/catalog/indexer/patient.py) | `catalog/indexer/` |
 | Listing columns, linked to the patient, with an info icon in sample listings if the sample's value differs from the patient's | [listing/cnic.py](src/senaite/starter/listing/cnic.py), [listing/configure.zcml](src/senaite/starter/listing/configure.zcml) | `adapters/listing.py`, `browser/patientfolder.py` |
@@ -159,8 +165,14 @@ Sample add form:
 - [ ] Pick a patient by MRN: CNIC filled. Remove the MRN: CNIC cleared.
 - [ ] Pick a patient by CNIC: MRN, name, address, date of birth, sex and
       gender filled. With "Temporary" MRN ticked first, it gets unticked.
-- [ ] Rejected: an existing patient's CNIC with another MRN, and the same new
-      CNIC for two different MRNs.
+- [ ] Pick a patient by MRN, change the CNIC to a new one and save: the
+      patient record has the new CNIC.
+- [ ] Rejected: an existing patient's CNIC with another MRN, the same new
+      CNIC for two different MRNs, and two samples with the same MRN but
+      different CNICs.
+- [ ] "Temporary" MRN and a new CNIC: saved with a temporary MRN, no patient
+      created. Giving the sample a new MRN later creates the patient with the
+      CNIC.
 - [ ] A CNIC typed in "Medical Record #" finds no patient, nor does an MRN
       typed in "CNIC".
 - [ ] A sample without CNIC registers as before, also with a temporary MRN.
@@ -169,19 +181,21 @@ Sample add form:
       CNIC.
 - [ ] Secondary sample: CNIC disabled.
 - [ ] Patient → Samples → Add: CNIC pre-filled.
+- [ ] "Copy to new" from a sample registered before its patient's CNIC was
+      changed: the form shows the patient's current CNIC.
 - [ ] As a client contact: registering a sample with a CNIC works.
 
 Samples and patients:
 
-- [ ] Sample header of an open sample: the CNIC can be changed. Another
-      patient's CNIC is rejected, unless the MRN is changed to that
-      patient's MRN at the same time.
+- [ ] Sample header of an open sample: the CNIC can be changed, and the
+      patient record gets the new CNIC. Another patient's CNIC is rejected,
+      unless the MRN is changed to that patient's MRN at the same time.
 - [ ] After verification the CNIC is read-only and links to the patient.
-- [ ] Sample with a temporary MRN, later given a new MRN: the created patient
-      has the CNIC.
-- [ ] Existing patient without CNIC: gets it from the next sample. Patient
-      with a CNIC: a sample with a different, unused CNIC leaves it unchanged
-      and shows the info icon in the listing.
+- [ ] Older samples with a previous CNIC of the patient show the info icon.
+      Saving their header without changing the CNIC leaves the patient's
+      CNIC alone.
+- [ ] Existing patient without CNIC: gets it from the next sample.
+- [ ] Creating a partition or a retest does not change the patient's CNIC.
 - [ ] Inactive patients are not offered by the CNIC lookup, and their CNIC is
       not changed from samples.
 - [ ] Patient form: CNIC after MRN, saved as typed, can be cleared. Another
@@ -204,6 +218,12 @@ Listings and regressions:
 - **CNICs are compared as entered**, like MRNs: `35202-1234567-1` and
   `3520212345671` are different CNICs, and a search must use the same form.
   Enter CNICs consistently.
+- **Only the CNIC is updated from samples.** Name, address, date of birth,
+  sex and gender follow senaite.patient: a new patient is created from the
+  sample, but existing patients are not updated.
+- **Changing only the MRN** of a sample in the sample view does not replace
+  the CNIC of the patient: picking the MRN fills in that patient's CNIC
+  instead.
 - **A CNIC belongs to one patient**, so children cannot be registered under a
   parent's CNIC. Leave their CNIC empty.
 - **Saved field order**: if "Manage form fields" of the sample add form (or

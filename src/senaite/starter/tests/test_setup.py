@@ -7,6 +7,7 @@ from senaite.impress.interfaces import ITemplateFinder
 from zope.component import getUtility
 from zope.component import queryUtility
 
+from senaite.starter.adapters.addsample import CNICRecordsValidator
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import set_patient_cnic
@@ -83,6 +84,16 @@ class TestSetup(SimpleTestCase):
         self.assertIsNotNone(get_cnic_error("3520212345671", "CNIC-1",
                                             temporary=True))
         self.assertIsNone(get_cnic_error("3520212345672", "CNIC-2"))
+
+    def test_cnic_records_validator(self):
+        validator = CNICRecordsValidator(self.request)
+        mrn = {"value": "REC-1", "temporary": False}
+        # the CNIC of a sample is set to its patient: one CNIC per MRN
+        records = [{"MedicalRecordNumber": mrn, "CNIC": "111"},
+                   {"MedicalRecordNumber": mrn, "CNIC": "222"}]
+        self.assertIsNotNone(validator.validate(records))
+        records[1]["CNIC"] = "111"
+        self.assertIsNone(validator.validate(records))
 
     def test_cnic_workflow_permissions(self):
         wf_tool = api.get_tool("portal_workflow")

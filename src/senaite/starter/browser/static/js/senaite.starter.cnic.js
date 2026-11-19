@@ -10,6 +10,9 @@
  *   patient fields.
  * - CNIC picked: the MRN of the patient with that CNIC is set, so that
  *   senaite.patient fills the other patient fields.
+ * - "Copy to new": the CNICs copied from other samples are refreshed from the
+ *   patient records, because the CNIC of a new sample replaces the CNIC of
+ *   its patient (see senaite.starter's subscribers/analysisrequest.py).
  *
  * Values are set like senaite.patient does: with the native setter of the
  * textarea of the widget plus an "input" event, which the ReactJS widget
@@ -97,6 +100,45 @@
     set_value(get_textarea(CNIC_FIELD, suffix), "");
   }
 
+  // Replaces a copied CNIC by the CNIC of the patient, if it has one
+  function refresh_cnic(suffix, mrn) {
+    if (!mrn || mrn === AUTO_WILDCARD) {
+      return;
+    }
+    fetch_patient({patient_mrn: mrn}).then(function (patient) {
+      var cnic = to_value(patient && patient.cnic);
+      if (cnic) {
+        set_value(get_textarea(CNIC_FIELD, suffix), cnic);
+      }
+    }).catch(log_error);
+  }
+
+  function refresh_copied_cnics(attempts) {
+    var textareas = document.querySelectorAll(
+      "textarea[name^='" + MRN_FIELD + "-']");
+    if (!textareas.length) {
+      // the widgets are rendered by ReactJS after the page is loaded
+      if (attempts > 0) {
+        window.setTimeout(function () {
+          refresh_copied_cnics(attempts - 1);
+        }, 200);
+      }
+      return;
+    }
+    Array.prototype.forEach.call(textareas, function (textarea) {
+      var match = FIELD_NAME.exec(textarea.getAttribute("name") || "");
+      if (match && match[1] === MRN_FIELD) {
+        refresh_cnic(match[2] || "", to_value(textarea.value.split("\n")[0]));
+      }
+    });
+  }
+
+  // Sample add form opened with "Copy to new"
+  function is_copy_form() {
+    return document.body.classList.contains("template-ar_add") &&
+      /[?&]copy_from=[^&]/.test(window.location.search);
+  }
+
   function on_cnic_selected(suffix, value) {
     var cnic = to_value(value);
     if (!cnic) {
@@ -163,6 +205,9 @@
   function init() {
     document.body.addEventListener("select", on_select);
     document.body.addEventListener("deselect", on_deselect);
+    if (is_copy_form()) {
+      refresh_copied_cnics(50);
+    }
   }
 
   if (document.readyState === "loading") {

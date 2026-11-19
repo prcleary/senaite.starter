@@ -59,6 +59,8 @@ class CNICRecordsValidator(object):
     - a CNIC that does not belong to any patient yet can not be used with
       different Medical Record Numbers, because each of them would create or
       refer to a different patient
+    - samples with the same Medical Record Number can not have different
+      CNICs, because the CNIC of a sample is set to its patient
     """
 
     def __init__(self, request):
@@ -67,6 +69,7 @@ class CNICRecordsValidator(object):
     def validate(self, records):
         errors = []
         new_cnics = {}
+        mrn_cnics = {}
         for record in records:
             cnic = to_cnic(record.get(SAMPLE_CNIC_FIELD))
             if not cnic:
@@ -74,6 +77,14 @@ class CNICRecordsValidator(object):
             mrn, temporary = get_record_mrn(record)
             mrn = api.safe_unicode(mrn or u"").strip()
             error = get_cnic_error(cnic, mrn, temporary)
+            if error is None and mrn and not temporary:
+                mrn_cnics.setdefault(mrn, set()).add(cnic)
+                if len(mrn_cnics[mrn]) > 1:
+                    error = _(
+                        u"error_mrn_used_with_different_cnics",
+                        default=u"Samples with Medical Record # ${mrn} have "
+                                u"different CNICs",
+                        mapping={"mrn": mrn})
             if error is None and not temporary and is_cnic_unique(cnic):
                 new_cnics.setdefault(cnic, set()).add(mrn)
                 if len(new_cnics[cnic]) > 1:

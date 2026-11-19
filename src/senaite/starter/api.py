@@ -27,6 +27,10 @@ SAMPLE_CNIC_FIELD = "CNIC"
 # Name of the Dexterity behavior field on the Patient
 PATIENT_CNIC_FIELD = "cnic"
 
+# Volatile (not persisted) flag of a sample whose CNIC was changed in the
+# current request, see subscribers/analysisrequest.py
+SAMPLE_CNIC_CHANGED = "_v_senaite_starter_cnic_changed"
+
 
 def to_cnic(value):
     """Returns the CNIC as entered, without surrounding whitespace, like
@@ -61,6 +65,23 @@ def get_patient_cnic(patient):
     """
     patient = api.get_object(patient)
     return to_cnic(getattr(aq_base(patient), PATIENT_CNIC_FIELD, None))
+
+
+def mark_sample_cnic_changed(sample):
+    """Flags that the CNIC of an existing sample was changed in the current
+    request
+    """
+    setattr(sample, SAMPLE_CNIC_CHANGED, True)
+
+
+def pop_sample_cnic_changed(sample):
+    """Returns whether the CNIC of the sample was changed in the current
+    request and removes the flag
+    """
+    changed = getattr(aq_base(sample), SAMPLE_CNIC_CHANGED, False)
+    if changed:
+        setattr(sample, SAMPLE_CNIC_CHANGED, False)
+    return changed
 
 
 def set_patient_cnic(patient, value):

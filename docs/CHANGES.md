@@ -6,7 +6,7 @@
   handled like senaite.patient handles the Medical Record Number but as a
   separate, optional identifier: patient lookup in the sample add form,
   unique per patient, indexed, searchable, listed, field permissions per
-  workflow state
+  workflow state. A CNIC entered or corrected on a sample updates the patient
 - #6 Stop asking Zope to install senaite.jsonapi as a product
 - #5 Ignore the scripts a buildout run generates
 - #4 Declare the translation domain in the package's ZCML
