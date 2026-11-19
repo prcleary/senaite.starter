@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from bika.lims import api
+from bika.lims.api.mail import is_valid_email_address
 from Products.validation import validation
 from Products.validation.interfaces.IValidator import IValidator
 from senaite.core.i18n import translate
@@ -89,5 +90,23 @@ class CNICValidator(object):
         return True
 
 
+@implementer(IValidator)
+class PatientEmailValidator(object):
+    """Verifies the patient email of a sample with the same check as the
+    patient form, which would otherwise reject the email copied from the
+    sample
+    """
+    name = "senaite_starter_patient_email_validator"
+
+    def __call__(self, value, *args, **kwargs):
+        if not isinstance(value, string_types) or not value.strip():
+            return True
+        if is_valid_email_address(value.strip()):
+            return True
+        return translate(_(u"error_patient_email_invalid",
+                           default=u"Patient email is invalid"))
+
+
 # Register validators
 validation.register(CNICValidator())
+validation.register(PatientEmailValidator())

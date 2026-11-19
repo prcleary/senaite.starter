@@ -19,6 +19,18 @@
       <role name="LabManager"/>
       <role name="Manager"/>
     </permission>
+    <permission name="senaite.starter: Field: Edit Patient Email" acquire="False">
+      <role name="Owner"/>
+      <role name="LabClerk"/>
+      <role name="LabManager"/>
+      <role name="Manager"/>
+    </permission>
+    <permission name="senaite.starter: Field: Edit Patient Phone" acquire="False">
+      <role name="Owner"/>
+      <role name="LabClerk"/>
+      <role name="LabManager"/>
+      <role name="Manager"/>
+    </permission>
 
   </permissions>
 

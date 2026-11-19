@@ -2,16 +2,26 @@
     xmlns="http://namespaces.zope.org/zope"
     i18n_domain="senaite.starter">
 
-  <!-- Default value of the CNIC field in the sample add form.
-       Looked up by name "<field name>_default_value_hook" in
+  <!-- Default values of the patient fields of this add-on in the sample add
+       form. Looked up by name "<field name>_default_value_hook" in
        bika.lims.browser.analysisrequest.add2.get_default_value -->
   <adapter
       for="senaite.starter.interfaces.ISenaiteStarter"
       provides="bika.lims.interfaces.IGetDefaultFieldValueARAddHook"
       factory=".addsample.CNICDefaultValueHook"
       name="CNIC_default_value_hook" />
+  <adapter
+      for="senaite.starter.interfaces.ISenaiteStarter"
+      provides="bika.lims.interfaces.IGetDefaultFieldValueARAddHook"
+      factory=".addsample.PatientEmailDefaultValueHook"
+      name="PatientEmail_default_value_hook" />
+  <adapter
+      for="senaite.starter.interfaces.ISenaiteStarter"
+      provides="bika.lims.interfaces.IGetDefaultFieldValueARAddHook"
+      factory=".addsample.PatientPhoneDefaultValueHook"
+      name="PatientPhone_default_value_hook" />
 
-  <!-- Validation of the CNICs of the samples to be created (sample add form).
+  <!-- Validation of the samples to be created (sample add form).
        Looked up as named adapters in
        bika.lims.browser.analysisrequest.add2.ajax_submit -->
   <adapter
@@ -19,5 +29,10 @@
       provides="bika.lims.interfaces.IAddSampleRecordsValidator"
       factory=".addsample.CNICRecordsValidator"
       name="senaite.starter.cnic" />
+  <adapter
+      for="senaite.starter.interfaces.ISenaiteStarter"
+      provides="bika.lims.interfaces.IAddSampleRecordsValidator"
+      factory=".addsample.PatientRecordsValidator"
+      name="senaite.starter.patient" />
 
 </configure>

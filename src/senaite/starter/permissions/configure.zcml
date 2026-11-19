@@ -7,5 +7,7 @@
 
   <!-- Patient field permissions -->
   <permission id="senaite.starter.permissions.FieldEditCNIC" title="senaite.starter: Field: Edit CNIC"/>
+  <permission id="senaite.starter.permissions.FieldEditPatientEmail" title="senaite.starter: Field: Edit Patient Email"/>
+  <permission id="senaite.starter.permissions.FieldEditPatientPhone" title="senaite.starter: Field: Edit Patient Phone"/>
 
 </configure>

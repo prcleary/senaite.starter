@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
+
 from bika.lims import api
 from bika.lims.interfaces import IAddSampleRecordsValidator
 from bika.lims.interfaces import IGetDefaultFieldValueARAddHook
 from senaite.core.i18n import translate
 from senaite.patient.interfaces import IPatient
 from senaite.starter import messageFactory as _
+from senaite.starter import sync
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import SAMPLE_CNIC_FIELD
@@ -34,6 +37,30 @@ class CNICDefaultValueHook(object):
         return ""
 
 
+@implementer(IGetDefaultFieldValueARAddHook)
+class PatientEmailDefaultValueHook(CNICDefaultValueHook):
+    """Default value of the patient email in the sample add form, like
+    CNICDefaultValueHook
+    """
+
+    def __call__(self, context):
+        if IPatient.providedBy(context):
+            return context.getEmail()
+        return ""
+
+
+@implementer(IGetDefaultFieldValueARAddHook)
+class PatientPhoneDefaultValueHook(CNICDefaultValueHook):
+    """Default value of the patient phone in the sample add form, like
+    CNICDefaultValueHook
+    """
+
+    def __call__(self, context):
+        if IPatient.providedBy(context):
+            return api.to_utf8(context.getPhone(), default="")
+        return ""
+
+
 def get_record_mrn(record):
     """Returns the MRN of a sample add form record and whether it is temporary
 
@@ -59,8 +86,9 @@ class CNICRecordsValidator(object):
     - a CNIC that does not belong to any patient yet can not be used with
       different Medical Record Numbers, because each of them would create or
       refer to a different patient
-    - samples with the same Medical Record Number can not have different
-      CNICs, because the CNIC of a sample is set to its patient
+
+    Samples with the same Medical Record Number and different CNICs are
+    rejected by PatientRecordsValidator
     """
 
     def __init__(self, request):
@@ -69,7 +97,6 @@ class CNICRecordsValidator(object):
     def validate(self, records):
         errors = []
         new_cnics = {}
-        mrn_cnics = {}
         for record in records:
             cnic = to_cnic(record.get(SAMPLE_CNIC_FIELD))
             if not cnic:
@@ -77,14 +104,6 @@ class CNICRecordsValidator(object):
             mrn, temporary = get_record_mrn(record)
             mrn = api.safe_unicode(mrn or u"").strip()
             error = get_cnic_error(cnic, mrn, temporary)
-            if error is None and mrn and not temporary:
-                mrn_cnics.setdefault(mrn, set()).add(cnic)
-                if len(mrn_cnics[mrn]) > 1:
-                    error = _(
-                        u"error_mrn_used_with_different_cnics",
-                        default=u"Samples with Medical Record # ${mrn} have "
-                                u"different CNICs",
-                        mapping={"mrn": mrn})
             if error is None and not temporary and is_cnic_unique(cnic):
                 new_cnics.setdefault(cnic, set()).add(mrn)
                 if len(new_cnics[cnic]) > 1:
@@ -97,6 +116,49 @@ class CNICRecordsValidator(object):
                 error = translate(error)
                 if error not in errors:
                     errors.append(error)
+
+        if not errors:
+            return None
+        return {"message": " ".join(errors), "fielderrors": {}}
+
+
+@implementer(IAddSampleRecordsValidator)
+class PatientRecordsValidator(object):
+    """Rejects samples of the same patient with different patient details
+
+    The patient values of each new sample are copied to its patient (see
+    senaite.starter.sync), so samples registered together with the same
+    Medical Record Number must not contradict each other. Empty values are
+    ignored, they do not change the patient
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+    def validate(self, records):
+        values_by_mrn = OrderedDict()
+        for record in records:
+            mrn, temporary = get_record_mrn(record)
+            mrn = api.safe_unicode(mrn or u"").strip()
+            if not mrn or temporary:
+                # no patient is created for temporary MRNs
+                continue
+            values = sync.get_record_values(record)
+            values_by_mrn.setdefault(mrn, []).append(values)
+
+        errors = []
+        for mrn, values_list in values_by_mrn.items():
+            conflicts = sync.get_conflicts(values_list)
+            if not conflicts:
+                continue
+            titles = map(lambda name: translate(sync.get_item(name).title),
+                         conflicts)
+            errors.append(translate(_(
+                u"error_patient_details_differ",
+                default=u"Samples with Medical Record # ${mrn} have different "
+                        u"values for: ${fields}. Use the same patient details "
+                        u"for all samples of a patient",
+                mapping={"mrn": mrn, "fields": u", ".join(titles)})))
 
         if not errors:
             return None

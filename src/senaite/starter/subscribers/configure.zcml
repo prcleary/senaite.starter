@@ -25,4 +25,12 @@
       handler=".analysisrequest.on_object_created"
       />
 
+  <!-- Sample transitioned. Registered for samples, so it is called after
+       senaite.core's handler for all objects that creates retests -->
+  <subscriber
+      for="bika.lims.interfaces.IAnalysisRequest
+           Products.DCWorkflow.interfaces.IAfterTransitionEvent"
+      handler=".analysisrequest.on_after_transition"
+      />
+
 </configure>

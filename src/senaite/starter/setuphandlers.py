@@ -9,7 +9,11 @@ from senaite.core.workflow import SAMPLE_WORKFLOW
 from senaite.patient.catalog import PATIENT_CATALOG
 
 from senaite.starter import logger
+from senaite.starter.config import SAMPLE_READ_ONLY_STATES
 from senaite.starter.permissions import FieldEditCNIC
+from senaite.starter.permissions import FieldEditPatientEmail
+from senaite.starter.permissions import FieldEditPatientPhone
+from senaite.starter.sync import init_snapshot
 
 PATIENT_WORKFLOW = "senaite_patient_workflow"
 
@@ -44,14 +48,11 @@ PATIENT_CNIC_INDEXES = [
     "patient_searchable_text",
 ]
 
-# Sample states in which senaite.patient makes its patient fields read-only
-SAMPLE_READ_ONLY_STATES = [
-    "verified",
-    "published",
-    "dispatched",
-    "rejected",
-    "invalid",
-    "cancelled",
+# Field permissions of the patient fields of samples
+PATIENT_FIELD_PERMISSIONS = [
+    FieldEditCNIC,
+    FieldEditPatientEmail,
+    FieldEditPatientPhone,
 ]
 
 # Field permissions per workflow state: {permission: (acquire, roles)}
@@ -59,14 +60,14 @@ WORKFLOW_PERMISSIONS = {
     # Same as senaite.patient sets for its sample field permissions
     # (WORKFLOW_TO_UPDATE of its setuphandlers.py)
     SAMPLE_WORKFLOW: {
-        state: {FieldEditCNIC: (False, ())}
+        state: dict.fromkeys(PATIENT_FIELD_PERMISSIONS, (False, ()))
         for state in SAMPLE_READ_ONLY_STATES
     },
     # Same as senaite_patient_workflow/definition.xml sets for its field
     # permissions
     PATIENT_WORKFLOW: {
-        "active": {FieldEditCNIC: (True, ())},
-        "inactive": {FieldEditCNIC: (False, ())},
+        "active": dict.fromkeys(PATIENT_FIELD_PERMISSIONS, (True, ())),
+        "inactive": dict.fromkeys(PATIENT_FIELD_PERMISSIONS, (False, ())),
     },
 }
 
@@ -92,6 +93,7 @@ def install(context):
     setup_behaviors(portal)
     setup_catalogs(portal)
     setup_workflows(portal)
+    setup_patient_sync(portal)
 
     logger.info("Install handler [DONE]")
 
@@ -158,6 +160,7 @@ def setup_workflows(portal):
                 logger.warn("State '{}' of workflow '{}' not found [SKIP]"
                             .format(state_id, wf_id))
                 continue
+            not_acquired = {}
             for permission, (acquire, roles) in permissions.items():
                 # make the permission managed by the workflow
                 if permission not in workflow.permissions:
@@ -165,23 +168,52 @@ def setup_workflows(portal):
                 state.setPermission(permission, acquire, roles)
                 if not acquire:
                     # objects acquire the permission unless set otherwise
-                    update_permission_for(wf_id, state_id, permission, roles)
+                    not_acquired[permission] = roles
+            if not_acquired:
+                update_permissions_for(wf_id, state_id, not_acquired)
 
 
-def update_permission_for(wf_id, state_id, permission, roles):
-    """Sets the (not acquired) roles of the permission to the existing objects
-    that are in the given workflow state
+def update_permissions_for(wf_id, state_id, permissions):
+    """Sets the (not acquired) roles of the permissions to the existing
+    objects that are in the given workflow state
+
+    :param permissions: dict of permission -> roles
     """
     catalog_id, portal_type = WORKFLOW_OBJECTS[wf_id]
     catalog = api.get_tool(catalog_id)
     query = {"portal_type": portal_type, "review_state": state_id}
     brains = catalog.unrestrictedSearchResults(query)
     total = len(brains)
-    logger.info("Setting '{}' for {} {} objects in '{}' ..."
-                .format(permission, total, portal_type, state_id))
+    logger.info("Setting {} for {} {} objects in '{}' ..."
+                .format(", ".join(permissions.keys()), total, portal_type,
+                        state_id))
     for num, brain in enumerate(brains, start=1):
         obj = brain._unrestrictedGetObject()
-        modifyRolesForPermission(obj, permission, tuple(roles))
+        for permission, roles in permissions.items():
+            modifyRolesForPermission(obj, permission, tuple(roles))
         if num % SAVEPOINT_THRESHOLD == 0:
             logger.info("Processed {}/{}".format(num, total))
             transaction.savepoint(optimistic=True)
+
+
+def setup_patient_sync(portal):
+    """Records the patient values of the open samples as synchronised, so
+    that their next edit only copies the values changed on them to the
+    patients (see senaite.starter.sync)
+    """
+    logger.info("*** Setup Patient Sync ***")
+    catalog = api.get_tool(SAMPLE_CATALOG)
+    brains = catalog.unrestrictedSearchResults(portal_type="AnalysisRequest")
+    brains = filter(lambda b: b.review_state not in SAMPLE_READ_ONLY_STATES,
+                    brains)
+    total = len(brains)
+    recorded = 0
+    for num, brain in enumerate(brains, start=1):
+        obj = brain._unrestrictedGetObject()
+        if init_snapshot(obj):
+            recorded += 1
+        if num % SAVEPOINT_THRESHOLD == 0:
+            logger.info("Processed {}/{}".format(num, total))
+            transaction.savepoint(optimistic=True)
+    logger.info("Recorded the patient values of {} of {} open samples"
+                .format(recorded, total))

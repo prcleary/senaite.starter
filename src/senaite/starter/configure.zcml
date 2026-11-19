@@ -47,11 +47,15 @@
       directory="profiles/uninstall"
       provides="Products.GenericSetup.interfaces.EXTENSION"/>
 
-  <!-- Setup handler -->
+  <!-- Setup handler. Needs the browser layer of the add-on (schema
+       extenders) and its permissions -->
   <genericsetup:importStep
       name="senaite.starter.install"
       title="SENAITE.STARTER: Run Setuphandler"
       description="Install senaite.starter"
-      handler="senaite.starter.setuphandlers.install"/>
+      handler="senaite.starter.setuphandlers.install">
+    <depends name="browserlayer"/>
+    <depends name="rolemap"/>
+  </genericsetup:importStep>
 
 </configure>
