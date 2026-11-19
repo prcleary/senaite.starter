@@ -33,10 +33,16 @@ def get_cnic_error(cnic, mrn, temporary=False):
     if mrn and not temporary:
         if any(map(lambda brain: get_patient_mrn(brain) == mrn, brains)):
             return None
-    return _(u"error_cnic_assigned_to_other_patient",
-             default=u"CNIC ${cnic} is already assigned to another patient. "
-                     u"Select the patient through the CNIC or the Medical "
-                     u"Record # instead",
+        return _(u"error_cnic_assigned_to_other_patient",
+                 default=u"CNIC ${cnic} is already assigned to another "
+                         u"patient. Select the patient through the CNIC or "
+                         u"the Medical Record # instead",
+                 mapping={"cnic": cnic})
+    # temporary or no MRN
+    return _(u"error_cnic_of_registered_patient",
+             default=u"CNIC ${cnic} belongs to a registered patient. Select "
+                     u"the patient through the CNIC instead of using a "
+                     u"temporary or empty Medical Record #",
              mapping={"cnic": cnic})
 
 

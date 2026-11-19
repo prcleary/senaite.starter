@@ -171,8 +171,10 @@ Sample add form:
       CNIC for two different MRNs, and two samples with the same MRN but
       different CNICs.
 - [ ] "Temporary" MRN and a new CNIC: saved with a temporary MRN, no patient
-      created. Giving the sample a new MRN later creates the patient with the
-      CNIC.
+      created. Replacing the temporary MRN by a new one in the sample view
+      (CNIC entered again if emptied) creates the patient with the CNIC.
+- [ ] "Temporary" ticked after a patient with a CNIC was filled in: saving
+      is refused with "CNIC … belongs to a registered patient".
 - [ ] A CNIC typed in "Medical Record #" finds no patient, nor does an MRN
       typed in "CNIC".
 - [ ] A sample without CNIC registers as before, also with a temporary MRN.
@@ -221,9 +223,15 @@ Listings and regressions:
 - **Only the CNIC is updated from samples.** Name, address, date of birth,
   sex and gender follow senaite.patient: a new patient is created from the
   sample, but existing patients are not updated.
-- **Changing only the MRN** of a sample in the sample view does not replace
-  the CNIC of the patient: picking the MRN fills in that patient's CNIC
-  instead.
+- **In the sample view, only a changed CNIC replaces the patient's.** If the
+  MRN is changed but the CNIC is saved as it was on the sample, an existing
+  patient with a different CNIC keeps theirs, and the samples listing shows
+  the info icon. Picking an MRN normally fills in that patient's CNIC
+  anyway.
+- **Removing or replacing the MRN empties the patient fields** of the form,
+  including the CNIC, as senaite.patient does in the add form and the sample
+  view. Picking an existing patient fills them in again. For a new MRN, enter
+  them again.
 - **A CNIC belongs to one patient**, so children cannot be registered under a
   parent's CNIC. Leave their CNIC empty.
 - **Saved field order**: if "Manage form fields" of the sample add form (or
