@@ -12,8 +12,8 @@ from senaite.core.i18n import translate
 from senaite.patient.api import get_patient_by_mrn
 from senaite.starter import check_installed
 from senaite.starter import messageFactory as _
-from senaite.starter.api import format_cnic
 from senaite.starter.api import get_patient_cnic
+from senaite.starter.api import to_cnic
 from zope.component import adapter
 from zope.component import getMultiAdapter
 from zope.interface import implementer
@@ -87,7 +87,7 @@ class SamplesListingAdapter(object):
     def folder_item(self, obj, item, index):
         # obj is a catalog brain: the value comes from the "getCNIC" metadata
         # column (added by the setup handler) instead of waking up the sample
-        cnic = format_cnic(api.safe_getattr(obj, "getCNIC", default=""))
+        cnic = to_cnic(api.safe_getattr(obj, "getCNIC", default=""))
         if not cnic:
             return item
         value = api.to_utf8(cnic)

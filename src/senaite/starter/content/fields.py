@@ -4,15 +4,16 @@ from archetypes.schemaextender.field import ExtensionField
 from Products.Archetypes.public import StringField
 from senaite.patient import api as patient_api
 
-from senaite.starter.api import format_cnic
+from senaite.starter.api import to_cnic
 
 
 class CNICField(ExtensionField, StringField):
-    """String field that stores a CNIC in standard format
+    """String field that stores the CNIC as entered, without surrounding
+    whitespace
     """
 
     def set(self, instance, value, **kwargs):
-        super(CNICField, self).set(instance, format_cnic(value), **kwargs)
+        super(CNICField, self).set(instance, to_cnic(value), **kwargs)
 
     def get_linked_patient(self, instance):
         """Returns the patient the sample is assigned to by its Medical

@@ -7,7 +7,6 @@ from senaite.impress.interfaces import ITemplateFinder
 from zope.component import getUtility
 from zope.component import queryUtility
 
-from senaite.starter.api import format_cnic
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import set_patient_cnic
@@ -61,36 +60,29 @@ class TestSetup(SimpleTestCase):
         self.assertIn("cnic", sample_catalog.indexes())
         self.assertIn("getCNIC", sample_catalog.schema())
 
-    def test_cnic_standard_format(self):
-        self.assertEqual(format_cnic("3520212345671"), u"35202-1234567-1")
-        self.assertEqual(format_cnic(" 35202 1234567 1 "), u"35202-1234567-1")
-        # other values are kept as entered
-        self.assertEqual(format_cnic(" AB-123 "), u"AB-123")
-        self.assertEqual(format_cnic(None), u"")
-
     def test_cnic_unique_per_patient(self):
         patients = self.portal.patients
         patient = api.create(patients, "Patient", mrn="CNIC-1")
-        set_patient_cnic(patient, "3520212345671")
+        set_patient_cnic(patient, " 3520212345671 ")
         patient.reindexObject()
-        self.assertEqual(get_patient_cnic(patient), u"35202-1234567-1")
+        # stored as entered, without surrounding whitespace
+        self.assertEqual(get_patient_cnic(patient), u"3520212345671")
 
-        # the CNIC is taken, whatever its format
-        self.assertFalse(is_cnic_unique("35202-1234567-1"))
+        # like the MRN, CNICs are compared as entered
         self.assertFalse(is_cnic_unique("3520212345671"))
-        self.assertTrue(is_cnic_unique("35202-1234567-2"))
+        self.assertTrue(is_cnic_unique("35202-1234567-1"))
 
         # another patient can not get the same CNIC
         other = api.create(patients, "Patient", mrn="CNIC-2")
         with self.assertRaises(ValueError):
-            set_patient_cnic(other, "35202 1234567 1")
+            set_patient_cnic(other, "3520212345671")
 
         # samples with this CNIC must be for that patient
         self.assertIsNone(get_cnic_error("3520212345671", "CNIC-1"))
         self.assertIsNotNone(get_cnic_error("3520212345671", "CNIC-2"))
         self.assertIsNotNone(get_cnic_error("3520212345671", "CNIC-1",
                                             temporary=True))
-        self.assertIsNone(get_cnic_error("35202-1234567-2", "CNIC-2"))
+        self.assertIsNone(get_cnic_error("3520212345672", "CNIC-2"))
 
     def test_cnic_workflow_permissions(self):
         wf_tool = api.get_tool("portal_workflow")

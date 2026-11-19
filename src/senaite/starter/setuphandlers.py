@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import transaction
-from Acquisition import aq_base
 from bika.lims import api
 from Products.DCWorkflow.utils import modifyRolesForPermission
 from senaite.core.catalog import SAMPLE_CATALOG
@@ -10,8 +9,6 @@ from senaite.core.workflow import SAMPLE_WORKFLOW
 from senaite.patient.catalog import PATIENT_CATALOG
 
 from senaite.starter import logger
-from senaite.starter.api import format_cnic
-from senaite.starter.api import PATIENT_CNIC_FIELD
 from senaite.starter.permissions import FieldEditCNIC
 
 PATIENT_WORKFLOW = "senaite_patient_workflow"
@@ -40,14 +37,11 @@ COLUMNS = [
     (SAMPLE_CATALOG, "getCNIC"),
 ]
 
-# Patient indexes reindexed for patients that have a CNIC
+# Patient indexes that contain the CNIC
 PATIENT_CNIC_INDEXES = [
     "patient_cnic",
     "patient_searchable_cnic",
     "patient_searchable_text",
-    # not extended: reindexed to drop the CNIC an earlier development version
-    # of this branch added to the MRN lookup of the sample add form
-    "patient_searchable_mrn",
 ]
 
 # Sample states in which senaite.patient makes its patient fields read-only
@@ -127,13 +121,12 @@ def setup_catalogs(portal):
     # adds the missing indexes (and indexes them) and columns
     setup_other_catalogs(portal, indexes=INDEXES, columns=COLUMNS)
 
-    # patients that got a CNIC before the current indexers were in place
-    update_patients_with_cnic(portal)
+    # patient_searchable_text already exists and is only reindexed here
+    reindex_patients_with_cnic(portal)
 
 
-def update_patients_with_cnic(portal):
-    """Stores the CNIC of patients that have one in standard format and
-    reindexes their CNIC indexes
+def reindex_patients_with_cnic(portal):
+    """Reindexes the CNIC indexes of the patients that have a CNIC
     """
     catalog = api.get_tool(PATIENT_CATALOG)
     values = filter(None, catalog.uniqueValuesFor("patient_cnic"))
@@ -141,13 +134,9 @@ def update_patients_with_cnic(portal):
         return
     query = {"portal_type": "Patient", "patient_cnic": list(values)}
     brains = catalog.unrestrictedSearchResults(query)
-    logger.info("Updating {} patients with CNIC ...".format(len(brains)))
+    logger.info("Reindexing {} patients with CNIC ...".format(len(brains)))
     for brain in brains:
         obj = brain._unrestrictedGetObject()
-        stored = getattr(aq_base(obj), PATIENT_CNIC_FIELD, None)
-        cnic = format_cnic(stored)
-        if stored != cnic:
-            setattr(obj, PATIENT_CNIC_FIELD, cnic or None)
         catalog.catalog_object(obj, idxs=PATIENT_CNIC_INDEXES,
                                update_metadata=0)
 

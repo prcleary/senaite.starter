@@ -6,10 +6,10 @@ from bika.lims.interfaces import IGetDefaultFieldValueARAddHook
 from senaite.core.i18n import translate
 from senaite.patient.interfaces import IPatient
 from senaite.starter import messageFactory as _
-from senaite.starter.api import format_cnic
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import SAMPLE_CNIC_FIELD
+from senaite.starter.api import to_cnic
 from senaite.starter.validators import get_cnic_error
 from senaite.starter.validators import MRN_FIELD
 from six import string_types
@@ -68,7 +68,7 @@ class CNICRecordsValidator(object):
         errors = []
         new_cnics = {}
         for record in records:
-            cnic = format_cnic(record.get(SAMPLE_CNIC_FIELD))
+            cnic = to_cnic(record.get(SAMPLE_CNIC_FIELD))
             if not cnic:
                 continue
             mrn, temporary = get_record_mrn(record)

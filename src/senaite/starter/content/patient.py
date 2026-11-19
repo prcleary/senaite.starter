@@ -3,7 +3,7 @@
 
 Patient is a Dexterity type, so the field is added through a behavior that is
 enabled on the Patient FTI by the setup handler. Values are stored as the
-`cnic` attribute of the patient, in standard format.
+`cnic` attribute of the patient.
 """
 
 from plone.autoform import directives
@@ -18,10 +18,10 @@ from zope.interface import invariant
 from zope.interface import provider
 
 from senaite.starter import messageFactory as _
-from senaite.starter.api import format_cnic
 from senaite.starter.api import get_patient_cnic
 from senaite.starter.api import is_cnic_unique
 from senaite.starter.api import set_patient_cnic
+from senaite.starter.api import to_cnic
 
 
 @provider(IFormFieldProvider)
@@ -45,7 +45,7 @@ class ICNICField(model.Schema):
         """Checks if the patient CNIC is unique, like senaite.patient does
         for the Medical Record Number
         """
-        cnic = format_cnic(data.cnic)
+        cnic = to_cnic(data.cnic)
         if not cnic:
             return
 
@@ -65,7 +65,7 @@ class ICNICField(model.Schema):
 @implementer(ICNICField)
 @adapter(IPatient)
 class CNICFieldAdapter(object):
-    """Stores the CNIC as `cnic` attribute of the patient in standard format
+    """Stores the CNIC as `cnic` attribute of the patient
     """
 
     def __init__(self, context):

@@ -8,9 +8,9 @@ from six import string_types
 from zope.interface import implementer
 
 from senaite.starter import messageFactory as _
-from senaite.starter.api import format_cnic
 from senaite.starter.api import get_patient_mrn
 from senaite.starter.api import search_patients_by_cnic
+from senaite.starter.api import to_cnic
 
 MRN_FIELD = "MedicalRecordNumber"
 
@@ -23,7 +23,7 @@ def get_cnic_error(cnic, mrn, temporary=False):
 
     :returns: error message or None
     """
-    cnic = format_cnic(cnic)
+    cnic = to_cnic(cnic)
     if not cnic:
         return None
     brains = search_patients_by_cnic(cnic, unrestricted=True)

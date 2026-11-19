@@ -5,22 +5,22 @@ from plone.indexer import indexer
 from senaite.patient.catalog.indexer import patient as patient_indexers
 from senaite.patient.interfaces import IPatient
 from senaite.patient.interfaces import IPatientCatalog
-from senaite.starter.api import get_cnic_search_tokens
 from senaite.starter.api import get_patient_cnic
 
 
-def extend_searchable_text(text, tokens):
-    """Appends the tokens to the searchable text (utf-8 encoded)
+def extend_searchable_text(text, values):
+    """Appends the non-empty values to the searchable text (utf-8 encoded)
     """
-    if not tokens:
+    values = filter(None, values)
+    if not values:
         return text
-    parts = [api.safe_unicode(text or "")] + list(tokens)
+    parts = [api.safe_unicode(text or "")] + map(api.safe_unicode, values)
     return u" ".join(filter(None, parts)).encode("utf-8")
 
 
 @indexer(IPatient, IPatientCatalog)
 def patient_cnic(instance):
-    """Index the CNIC of the patient (standard format)
+    """Index the CNIC of the patient, like patient_mrn
     """
     return get_patient_cnic(instance).encode("utf-8")
 
@@ -31,8 +31,7 @@ def patient_searchable_cnic(instance):
     form, like patient_searchable_mrn is for the Medical Record # field.
     Contains the CNIC only
     """
-    tokens = get_cnic_search_tokens(get_patient_cnic(instance))
-    return u" ".join(tokens).encode("utf-8")
+    return get_patient_cnic(instance).encode("utf-8")
 
 
 # Registered for the patient catalog interface, which is more specific than
@@ -49,5 +48,4 @@ def patient_searchable_text(instance):
     the CNIC
     """
     text = patient_indexers.patient_searchable_text.callable(instance)
-    tokens = get_cnic_search_tokens(get_patient_cnic(instance))
-    return extend_searchable_text(text, tokens)
+    return extend_searchable_text(text, [get_patient_cnic(instance)])

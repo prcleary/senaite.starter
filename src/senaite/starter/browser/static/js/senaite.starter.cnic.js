@@ -33,14 +33,9 @@
     return (input && input.value) || window.portal_url || "";
   }
 
-  // Same rules as senaite.starter.api.format_cnic
-  function format_cnic(value) {
-    var cnic = (value || "").trim();
-    var digits = cnic.replace(/[\s\-]/g, "");
-    if (/^\d{13}$/.test(digits)) {
-      return [digits.slice(0, 5), digits.slice(5, 12), digits.slice(12)].join("-");
-    }
-    return cnic;
+  // Values are used as entered, like senaite.starter.api.to_cnic
+  function to_value(value) {
+    return (value || "").trim();
   }
 
   function get_textarea(field, suffix) {
@@ -94,7 +89,7 @@
       if (!patient) {
         return;
       }
-      set_value(get_textarea(CNIC_FIELD, suffix), format_cnic(patient.cnic));
+      set_value(get_textarea(CNIC_FIELD, suffix), to_value(patient.cnic));
     }).catch(log_error);
   }
 
@@ -103,7 +98,7 @@
   }
 
   function on_cnic_selected(suffix, value) {
-    var cnic = format_cnic(value);
+    var cnic = to_value(value);
     if (!cnic) {
       return;
     }
